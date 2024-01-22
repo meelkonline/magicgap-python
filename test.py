@@ -1,22 +1,16 @@
-import requests
+from transformers import AutoModelForCausalLM, AutoTokenizer
 
-# Define the API endpoint
-endpoint = "https://api-inference.huggingface.co/models/huggyllama/llama-30b"
+device = "cuda"  # Use "cpu" if you don't have a CUDA-compatible GPU
+model = AutoModelForCausalLM.from_pretrained("mistralai/Mistral-7B-v0.1")
+tokenizer = AutoTokenizer.from_pretrained("mistralai/Mistral-7B-v0.1")
 
-# Define your headers - Replace 'YOUR_API_TOKEN' with your Hugging Face API token
-headers = {
-    "Authorization": "Bearer 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"
-}
+# Step 3: Running the Model
+prompt = "My favourite condiment is"  # Example prompt
+model_inputs = tokenizer([prompt], return_tensors="pt").to(device)
+model.to(device)
 
-# Define the data you want to send
-data = {
-    "inputs": "Your input text here."
-}
-
-# Make the API call
-response = requests.post(endpoint, headers=headers, json=data)
-
-# Extract the results from the API response
-result = response.json()
+# Generate the output
+generated_ids = model.generate(**model_inputs, max_new_tokens=100, do_sample=True)
+result = tokenizer.batch_decode(generated_ids)[0]
 
 print(result)

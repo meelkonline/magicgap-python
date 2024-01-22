@@ -5,10 +5,14 @@ import torch
 from fastapi import FastAPI, HTTPException
 from textblob import TextBlob
 from transformers import AutoTokenizer, AutoModel
+from textblob import TextBlob
 
 # Load the pre-trained model and tokenizer (e.g., DistilBERT)
 tokenizer = AutoTokenizer.from_pretrained("distilbert-base-uncased")
 model = AutoModel.from_pretrained("distilbert-base-uncased")
+
+from chat_deepset_roberta_base_squad2 import roberta_answer
+from chat_dialog_gpt import dialog_gpt_answer
 
 from helpers.helpers import read_file, chunk_pdf, extract_coherent_chunks, process_document, generate_chunks, \
     generate_openai_qas
@@ -19,6 +23,11 @@ app = FastAPI()
 @app.get("/api/hello")
 def hello(text):
     return 'hi'
+
+
+@app.get("/api/chat")
+def chat(question, context):
+    return roberta_answer(question, context)
 
 
 @app.get("/api/vectorize")
@@ -38,7 +47,7 @@ def vectorize(text: str):
     # Or, alternatively, convert to a string if preferred
     # vector_str = json.dumps(vector_list)
 
-    return {"vector": vector_list}
+    return vector_list
 
 
 @app.get("/api/chunk-document")
@@ -76,3 +85,11 @@ def get_sentiment(text: str):
     sentiment_score = analysis.sentiment.polarity
 
     return sentiment_score
+
+
+@app.get("/api/mistral/chat")
+def mistral_chat(question: str, context: str, key: str):
+    if not question:
+        raise HTTPException(status_code=400, detail="No question provided")
+
+    return ""

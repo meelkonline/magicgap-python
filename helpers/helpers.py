@@ -170,7 +170,7 @@ def generate_openai_qas(content, description, openai_api_key):
     """
     openai.api_key = openai_api_key
 
-    prompt = f"{description}: {content}.Return a JSON array, with each Q/A saved as SQUAD."
+    prompt = f"{description}: {content}.Return a JSON array, with each Q/A saved as SQUAD"
 
     response = openai.Completion.create(
         engine="gpt-4-1106-preview",
