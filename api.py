@@ -1,18 +1,9 @@
-import string
-import spacy
 import torch
 
 from fastapi import FastAPI, HTTPException
-from textblob import TextBlob
 from transformers import AutoTokenizer, AutoModel
 from textblob import TextBlob
-
-# Load the pre-trained model and tokenizer (e.g., DistilBERT)
-tokenizer = AutoTokenizer.from_pretrained("distilbert-base-uncased")
-model = AutoModel.from_pretrained("distilbert-base-uncased")
-
 from chat_deepset_roberta_base_squad2 import roberta_answer
-from chat_dialog_gpt import dialog_gpt_answer
 
 from helpers.helpers import read_file, chunk_pdf, extract_coherent_chunks, process_document, generate_chunks, \
     generate_openai_qas
@@ -21,7 +12,7 @@ app = FastAPI()
 
 
 @app.get("/api/hello")
-def hello(text):
+def hello():
     return 'hi'
 
 
@@ -33,6 +24,9 @@ def chat(question, context):
 @app.get("/api/vectorize")
 def vectorize(text: str):
     # Tokenize and encode the text for the model
+    tokenizer = AutoTokenizer.from_pretrained("distilbert-base-uncased")
+    model = AutoModel.from_pretrained("distilbert-base-uncased")
+
     inputs = tokenizer(text, return_tensors="pt", truncation=True, padding=True, max_length=512)
 
     # Generate the embedding

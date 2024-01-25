@@ -1,6 +1,5 @@
 from transformers import AutoModelForCausalLM, AutoTokenizer, Conversation, ConversationalPipeline
 
-
 def dialog_gpt_answer(user_input, context):
     model_name = "microsoft/DialoGPT-medium"
 
