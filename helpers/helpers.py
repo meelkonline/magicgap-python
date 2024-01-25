@@ -1,5 +1,4 @@
 from PyPDF2 import PdfReader
-from textblob import TextBlob
 import re
 import spacy
 import pdfplumber
