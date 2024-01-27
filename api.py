@@ -4,9 +4,9 @@ from fastapi import FastAPI, HTTPException
 from transformers import AutoTokenizer, AutoModel
 from textblob import TextBlob
 from chat_deepset_roberta_base_squad2 import roberta_answer
+from transformers import GPT2Tokenizer
 
-from helpers.helpers import read_file, chunk_pdf, extract_coherent_chunks, process_document, generate_chunks, \
-    generate_openai_qas
+from helpers.helpers import chunk_pdf, process_document, generate_chunks
 
 app = FastAPI()
 
@@ -14,6 +14,13 @@ app = FastAPI()
 @app.get("/api/hello")
 def hello():
     return 'hi'
+
+
+@app.get("/api/count_gpt2_token")
+def count_gpt2_token(text):
+    tokenizer = GPT2Tokenizer.from_pretrained("gpt2")
+    tokens = tokenizer.tokenize(text, return_tensors="pt", truncation=True, padding=True, max_length=4096)
+    return len(tokens)
 
 
 @app.get("/api/chat")
@@ -62,11 +69,6 @@ def smart_chunk(file_path, description, openai_api_key):
     return chunks
 
 
-@app.get("/api/extract-qas")
-def extract_qas(content, description, openai_api_key):
-    return generate_openai_qas(content, description, openai_api_key)
-
-
 @app.get("/api/get-sentiment")
 def get_sentiment(text: str):
     if not text:
@@ -80,10 +82,3 @@ def get_sentiment(text: str):
 
     return sentiment_score
 
-
-@app.get("/api/mistral/chat")
-def mistral_chat(question: str, context: str, key: str):
-    if not question:
-        raise HTTPException(status_code=400, detail="No question provided")
-
-    return ""
