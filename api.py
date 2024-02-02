@@ -68,7 +68,6 @@ def smart_chunk(file_path, description, openai_api_key):
 
     return chunks
 
-
 @app.get("/api/get-sentiment")
 def get_sentiment(text: str):
     if not text:
