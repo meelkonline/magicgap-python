@@ -7,6 +7,7 @@ from chat_deepset_roberta_base_squad2 import roberta_answer
 from transformers import GPT2Tokenizer
 
 from helpers.helpers import chunk_pdf, process_document, generate_chunks
+from spacy_functions import spatie_extract_phrases
 
 app = FastAPI()
 
@@ -26,6 +27,11 @@ def count_gpt2_token(text):
 @app.get("/api/chat")
 def chat(question, context):
     return roberta_answer(question, context)
+
+
+@app.get("/api/extract_entities")
+def chat(text):
+    return spatie_extract_phrases(text)
 
 
 @app.get("/api/vectorize")
@@ -68,6 +74,7 @@ def smart_chunk(file_path, description, openai_api_key):
 
     return chunks
 
+
 @app.get("/api/get-sentiment")
 def get_sentiment(text: str):
     if not text:
@@ -80,4 +87,3 @@ def get_sentiment(text: str):
     sentiment_score = analysis.sentiment.polarity
 
     return sentiment_score
-
