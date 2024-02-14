@@ -7,7 +7,7 @@ from textblob import TextBlob
 from api_requests import UpsertRequest, VectorizeRequest, SearchRequest, UpdateRequest, DeleteRequest
 from pinecone_functions import pinecone_upsert, pinecone_search, pinecone_update, pinecone_delete
 
-from spacy_functions import spatie_extract_phrases
+from nlp_functions import spatie_extract_phrases, evaluate_toxicity, get_lang
 
 app = FastAPI()
 
@@ -58,23 +58,19 @@ def extract_entities(text):
     return spatie_extract_phrases(text)
 
 
+@app.post("/api/lang")
+def lang(text):
+    return get_lang(text)
+
+
+@app.post("/api/toxicity")
+def toxicity(text):
+    return evaluate_toxicity(text)  # [{'label': 'not_toxic', 'score': 0.9954179525375366}]
+
+
 @app.post("/api/vectorize")
 def vectorize(request: VectorizeRequest):
     model = SentenceTransformer("all-MiniLM-L6-v2")
     embeddings = model.encode(request.sentences)
     embeddings_list = [embedding.tolist() for embedding in embeddings]
     return embeddings_list
-
-
-@app.get("/api/get-sentiment")
-def get_sentiment(text: str):
-    if not text:
-        raise HTTPException(status_code=400, detail="No text provided")
-
-    analysis = TextBlob(text)
-    # Sentiment property returns a namedtuple of the form Sentiment(polarity, subjectivity)
-    # polarity is a float within the range [-1.0, 1.0]
-    # subjectivity is a float within the range [0.0, 1.0] where 0.0 is very objective and 1.0 is very subjective
-    sentiment_score = analysis.sentiment.polarity
-
-    return sentiment_score

@@ -1,10 +1,11 @@
 import spacy
+import langid
+
+from transformers import pipeline
 
 # Load the spaCy model
 nlp = spacy.load("en_core_web_sm")
 
-
-#
 
 # Function to lemmatize and remove stop words from a chunk
 def spatie_refine_chunk(chunk):
@@ -33,3 +34,13 @@ def spatie_extract_phrases(text):
 
     return nouns_verbs
 
+
+def evaluate_toxicity(text):
+    model_path = "citizenlab/distilbert-base-multilingual-cased-toxicity"
+    toxicity_classifier = pipeline("text-classification", model=model_path, tokenizer=model_path)
+    return toxicity_classifier(text)
+
+
+def get_lang(text):
+    lang, confidence = langid.classify(text)
+    return lang
