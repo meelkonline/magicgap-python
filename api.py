@@ -1,78 +1,69 @@
-import torch
+import pandas as pd
 
+from sentence_transformers import SentenceTransformer
 from fastapi import FastAPI, HTTPException
-from transformers import AutoTokenizer, AutoModel
 from textblob import TextBlob
-from chat_deepset_roberta_base_squad2 import roberta_answer
-from transformers import GPT2Tokenizer
 
-from helpers.helpers import chunk_pdf, process_document, generate_chunks
+from api_requests import UpsertRequest, VectorizeRequest, SearchRequest, UpdateRequest, DeleteRequest
+from pinecone_functions import pinecone_upsert, pinecone_search, pinecone_update, pinecone_delete
+
 from spacy_functions import spatie_extract_phrases
 
 app = FastAPI()
 
 
-@app.get("/api/hello")
-def hello():
-    return 'hi'
+@app.post("/api/chunk_csv")
+def chunk_csv(request: SearchRequest):
+    df = pd.read_csv("real_estate_courses.csv")
+    model = SentenceTransformer('all-MiniLM-L6-v2')
+
+    # vectorizing the course description
+    df['description_vector'] = df['description'].apply(lambda x: model.encode(x))
+    pinecone_data = [
+        {
+            "id": str(index),  # Unique identifier for the course
+            "values": row['description_vector'],  # Vector representation of the course description
+            "metadata": {  # Additional details about the course
+                "name": row['name'],
+                "required_equipment": row['required equipment'],
+                # Add more fields as necessary
+            }
+        }
+        for index, row in df.iterrows()
+    ]
 
 
-@app.get("/api/count_gpt2_token")
-def count_gpt2_token(text):
-    tokenizer = GPT2Tokenizer.from_pretrained("gpt2")
-    tokens = tokenizer.tokenize(text, return_tensors="pt", truncation=True, padding=True, max_length=4096)
-    return len(tokens)
+@app.post("/api/upsert")
+def upsert(request: UpsertRequest):
+    return pinecone_upsert(request)
 
 
-@app.get("/api/chat")
-def chat(question, context):
-    return roberta_answer(question, context)
+@app.post("/api/update")
+def update(request: UpdateRequest):
+    return pinecone_update(request)
+
+
+@app.post("/api/delete")
+def delete(request: DeleteRequest):
+    return pinecone_delete(request)
+
+
+@app.post("/api/search")
+def search(request: SearchRequest):
+    return pinecone_search(request)
 
 
 @app.get("/api/extract_entities")
-def chat(text):
+def extract_entities(text):
     return spatie_extract_phrases(text)
 
 
-@app.get("/api/vectorize")
-def vectorize(text: str):
-    # Tokenize and encode the text for the model
-    tokenizer = AutoTokenizer.from_pretrained("distilbert-base-uncased")
-    model = AutoModel.from_pretrained("distilbert-base-uncased")
-
-    inputs = tokenizer(text, return_tensors="pt", truncation=True, padding=True, max_length=512)
-
-    # Generate the embedding
-    with torch.no_grad():
-        outputs = model(**inputs)
-
-    # Mean pooling to get a single vector (embedding) for the entire text
-    vector = outputs.last_hidden_state.mean(dim=1).numpy()
-
-    # Convert the NumPy array to a list (or string) for JSON serialization
-    vector_list = vector.tolist()  # Convert to list
-    # Or, alternatively, convert to a string if preferred
-    # vector_str = json.dumps(vector_list)
-
-    return vector_list
-
-
-@app.get("/api/chunk-document")
-def chunk_document(file_path, max_chunk_size, threshold=0.5):
-    chunks = chunk_pdf(file_path, max_chunk_size)
-
-    return chunks
-
-
-@app.get("/api/smart-chunk")
-def smart_chunk(file_path, description, openai_api_key):
-    processed_chunks = process_document(file_path)
-    chunks = []
-    for chunk in processed_chunks:
-        generated_chunks = generate_chunks(chunk, description, openai_api_key)
-        chunks.append(generated_chunks)
-
-    return chunks
+@app.post("/api/vectorize")
+def vectorize(request: VectorizeRequest):
+    model = SentenceTransformer("all-MiniLM-L6-v2")
+    embeddings = model.encode(request.sentences)
+    embeddings_list = [embedding.tolist() for embedding in embeddings]
+    return embeddings_list
 
 
 @app.get("/api/get-sentiment")
