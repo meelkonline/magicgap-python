@@ -32,7 +32,7 @@ def spatie_extract_phrases(text):
             # Add the noun or verb to the list
             nouns_verbs.append(word)
 
-    return nouns_verbs
+    return ' '.join(nouns_verbs)
 
 
 def evaluate_toxicity(text):

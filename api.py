@@ -4,33 +4,14 @@ from sentence_transformers import SentenceTransformer
 from fastapi import FastAPI, HTTPException
 from textblob import TextBlob
 
-from api_requests import UpsertRequest, VectorizeRequest, SearchRequest, UpdateRequest, DeleteRequest
+from api_requests import UpsertRequest, VectorizeRequest, SearchRequest, UpdateRequest, DeleteRequest, \
+    CosineSimilarityRequest
 from pinecone_functions import pinecone_upsert, pinecone_search, pinecone_update, pinecone_delete
 
 from nlp_functions import spatie_extract_phrases, evaluate_toxicity, get_lang
+from vector_functions import evaluate_cosine_similarity, embed
 
 app = FastAPI()
-
-
-@app.post("/api/chunk_csv")
-def chunk_csv(request: SearchRequest):
-    df = pd.read_csv("real_estate_courses.csv")
-    model = SentenceTransformer('all-MiniLM-L6-v2')
-
-    # vectorizing the course description
-    df['description_vector'] = df['description'].apply(lambda x: model.encode(x))
-    pinecone_data = [
-        {
-            "id": str(index),  # Unique identifier for the course
-            "values": row['description_vector'],  # Vector representation of the course description
-            "metadata": {  # Additional details about the course
-                "name": row['name'],
-                "required_equipment": row['required equipment'],
-                # Add more fields as necessary
-            }
-        }
-        for index, row in df.iterrows()
-    ]
 
 
 @app.post("/api/upsert")
@@ -68,9 +49,14 @@ def toxicity(text):
     return evaluate_toxicity(text)  # [{'label': 'not_toxic', 'score': 0.9954179525375366}]
 
 
+@app.post("/api/cosine_similarity")
+def cosine_similarity(request: CosineSimilarityRequest):
+    score = evaluate_cosine_similarity(request)
+    return float(score)
+
+
 @app.post("/api/vectorize")
 def vectorize(request: VectorizeRequest):
-    model = SentenceTransformer("all-MiniLM-L6-v2")
-    embeddings = model.encode(request.sentences)
-    embeddings_list = [embedding.tolist() for embedding in embeddings]
+    embeddings = embed(request.string)
+    embeddings_list = embeddings.tolist()
     return embeddings_list

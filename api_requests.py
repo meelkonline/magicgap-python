@@ -3,7 +3,7 @@ from typing import List, Any, Optional
 
 
 class VectorizeRequest(BaseModel):
-    sentences: List[str]
+    string: str
 
 
 class UpsertRequest(BaseModel):
@@ -31,3 +31,8 @@ class SearchRequest(BaseModel):
     vector: List[float]
     filter: Optional[dict] = {}
     top_k: Optional[int] = 5
+
+
+class CosineSimilarityRequest(BaseModel):
+    string1: str
+    string2: str
