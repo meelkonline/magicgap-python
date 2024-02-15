@@ -4,7 +4,7 @@ from sentence_transformers import SentenceTransformer
 from fastapi import FastAPI, HTTPException
 from textblob import TextBlob
 
-from api_requests import UpsertRequest, VectorizeRequest, SearchRequest, UpdateRequest, DeleteRequest, \
+from api_requests import UpsertRequest, SingleStringRequest, SearchRequest, UpdateRequest, DeleteRequest, \
     CosineSimilarityRequest
 from pinecone_functions import pinecone_upsert, pinecone_search, pinecone_update, pinecone_delete
 
@@ -40,13 +40,13 @@ def extract_entities(text):
 
 
 @app.post("/api/lang")
-def lang(text):
-    return get_lang(text)
+def lang(request: SingleStringRequest):
+    return get_lang(request.string)
 
 
 @app.post("/api/toxicity")
-def toxicity(text):
-    return evaluate_toxicity(text)  # [{'label': 'not_toxic', 'score': 0.9954179525375366}]
+def toxicity(request: SingleStringRequest):
+    return evaluate_toxicity(request.string)
 
 
 @app.post("/api/cosine_similarity")
@@ -56,7 +56,7 @@ def cosine_similarity(request: CosineSimilarityRequest):
 
 
 @app.post("/api/vectorize")
-def vectorize(request: VectorizeRequest):
+def vectorize(request: SingleStringRequest):
     embeddings = embed(request.string)
     embeddings_list = embeddings.tolist()
     return embeddings_list

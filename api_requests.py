@@ -2,7 +2,7 @@ from pydantic import BaseModel
 from typing import List, Any, Optional
 
 
-class VectorizeRequest(BaseModel):
+class SingleStringRequest(BaseModel):
     string: str
 
 

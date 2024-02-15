@@ -36,9 +36,14 @@ def spatie_extract_phrases(text):
 
 
 def evaluate_toxicity(text):
+    # nb : bof en francais : je vais te violer = not toxic 0.7
     model_path = "citizenlab/distilbert-base-multilingual-cased-toxicity"
     toxicity_classifier = pipeline("text-classification", model=model_path, tokenizer=model_path)
-    return toxicity_classifier(text)
+    result = toxicity_classifier(text)
+    score = result[0]['score']
+    if result[0]['label'] == "toxic":
+        score = -score
+    return float(score)
 
 
 def get_lang(text):
