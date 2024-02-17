@@ -26,6 +26,11 @@ class DeleteRequest(BaseModel):
     filter: Optional[dict] = {}
 
 
+class ListRequest(BaseModel):
+    index_name: str
+    prefix: str
+
+
 class SearchRequest(BaseModel):
     index_name: str
     vector: List[float]

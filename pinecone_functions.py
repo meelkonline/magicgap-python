@@ -1,9 +1,9 @@
 import os
-
+import requests
 from dotenv import load_dotenv
 from pinecone import Pinecone, PineconeApiException
 
-from api_requests import UpsertRequest, SearchRequest, UpdateRequest, DeleteRequest
+from api_requests import UpsertRequest, SearchRequest, UpdateRequest, DeleteRequest, ListRequest
 
 
 def pinecone_client():
@@ -42,6 +42,17 @@ def pinecone_delete(request: DeleteRequest):
             print("No IDs or filter provided for deletion.")
     except PineconeApiException as e:
         print(f"Pinecone API Exception: {e}")
+
+
+def pinecone_list(request: ListRequest):
+    load_dotenv()  # Load environment variables from a .env file
+    PINECONE_API_KEY = os.getenv('PINECONE_API_KEY')
+    PINECONE_HOST = os.getenv(request.index_name)
+    url = PINECONE_HOST+"/vectors/list?prefix=te&limit=100"
+    headers = {"accept": "application/json", "Api-Key": PINECONE_API_KEY}
+    response = requests.get(url, headers=headers)
+    response_data = response.json()
+    return response_data.get('vectors', [])  # Default to an empty list if 'vectors' key is not found
 
 
 def pinecone_search(request: SearchRequest):

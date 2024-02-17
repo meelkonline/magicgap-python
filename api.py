@@ -5,8 +5,8 @@ from fastapi import FastAPI, HTTPException
 from textblob import TextBlob
 
 from api_requests import UpsertRequest, SingleStringRequest, SearchRequest, UpdateRequest, DeleteRequest, \
-    CosineSimilarityRequest
-from pinecone_functions import pinecone_upsert, pinecone_search, pinecone_update, pinecone_delete
+    CosineSimilarityRequest, ListRequest
+from pinecone_functions import pinecone_upsert, pinecone_search, pinecone_update, pinecone_delete, pinecone_list
 
 from nlp_functions import spatie_extract_phrases, evaluate_toxicity, get_lang
 from vector_functions import evaluate_cosine_similarity, embed
@@ -27,6 +27,11 @@ def update(request: UpdateRequest):
 @app.post("/api/delete")
 def delete(request: DeleteRequest):
     return pinecone_delete(request)
+
+
+@app.post("/api/list")
+def vector_list(request: ListRequest):
+    return pinecone_list(request)
 
 
 @app.post("/api/search")
