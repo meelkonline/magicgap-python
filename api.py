@@ -1,9 +1,4 @@
-import pandas as pd
-
-from sentence_transformers import SentenceTransformer
-from fastapi import FastAPI, HTTPException
-from textblob import TextBlob
-
+from fastapi import FastAPI
 from api_requests import UpsertRequest, SingleStringRequest, SearchRequest, UpdateRequest, DeleteRequest, \
     CosineSimilarityRequest, ListRequest
 from pinecone_functions import pinecone_upsert, pinecone_search, pinecone_update, pinecone_delete, pinecone_list
