@@ -1,18 +1,15 @@
+import os
+
 import spacy
 import langid
+import pdfplumber
+from docx import Document
+from fastapi import HTTPException
 
 from transformers import pipeline
 
 # Load the spaCy model
 nlp = spacy.load("en_core_web_sm")
-
-
-# Function to lemmatize and remove stop words from a chunk
-def spatie_refine_chunk(chunk):
-    # Lemmatize and remove stop words within the chunk
-    refined = [token.lemma_ for token in chunk if not token.is_stop]
-    # Join the refined tokens back into a string
-    return " ".join(refined)
 
 
 def spatie_extract_phrases(text):
@@ -44,6 +41,64 @@ def evaluate_toxicity(text):
     if result[0]['label'] == "toxic":
         score = -score
     return float(score)
+
+
+def extract_document_chunks(filepath, max_words):
+    if not os.path.exists(filepath):
+        raise HTTPException(status_code=404, detail="File not found.")
+
+    # Detecting file format based on file extension
+    file_extension = filepath.split('.')[-1].lower()
+    try:
+        if file_extension == 'pdf':
+            chunks = extract_text_from_pdf(filepath, max_words)
+        elif file_extension == 'docx':
+            chunks = extract_text_from_docx(filepath, max_words)
+        else:
+            raise HTTPException(status_code=400, detail="Unsupported file format.")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error processing document: {str(e)}")
+
+    return {"chunks": chunks}
+
+
+def extract_text_from_pdf(filepath, max_words):
+    with pdfplumber.open(filepath) as pdf:
+        text_chunks = []
+        current_chunk = []
+        current_word_count = 0
+        for page in pdf.pages:
+            text = page.extract_text() or ""
+            for word in text.split():
+                if current_word_count < max_words:
+                    current_chunk.append(word)
+                    current_word_count += 1
+                else:
+                    text_chunks.append(" ".join(current_chunk))
+                    current_chunk = [word]
+                    current_word_count = 1
+        if current_chunk:
+            text_chunks.append(" ".join(current_chunk))
+    return text_chunks
+
+
+def extract_text_from_docx(filepath, max_words):
+    doc = Document(filepath)
+    text_chunks = []
+    current_chunk = []
+    current_word_count = 0
+    for paragraph in doc.paragraphs:
+        for word in paragraph.text.split():
+            if current_word_count < max_words:
+                current_chunk.append(word)
+                current_word_count += 1
+            else:
+                text_chunks.append(" ".join(current_chunk))
+                current_chunk = [word]
+                current_word_count = 1
+    if current_chunk:
+        text_chunks.append(" ".join(current_chunk))
+    return text_chunks
 
 
 def get_lang(text):

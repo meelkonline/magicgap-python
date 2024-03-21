@@ -1,8 +1,8 @@
 from fastapi import FastAPI
 from api_requests import UpsertRequest, SingleStringRequest, SearchRequest, UpdateRequest, DeleteRequest, \
-    CosineSimilarityRequest, ListRequest
+    CosineSimilarityRequest, ListRequest, ExtractChunksRequest
 from pinecone_functions import pinecone_upsert, pinecone_search, pinecone_update, pinecone_delete, pinecone_list
-from nlp_functions import spatie_extract_phrases, evaluate_toxicity, get_lang
+from nlp_functions import spatie_extract_phrases, evaluate_toxicity, get_lang, extract_document_chunks
 from vector_functions import evaluate_cosine_similarity, embed
 
 app = FastAPI()
@@ -36,6 +36,11 @@ def search(request: SearchRequest):
 @app.get("/api/extract_entities")
 def extract_entities(text):
     return spatie_extract_phrases(text)
+
+
+@app.post("/api/extract_chunks")
+def extract_chunks(request: ExtractChunksRequest):
+    return extract_document_chunks(request.filepath, request.max_words)
 
 
 @app.post("/api/lang")

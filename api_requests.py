@@ -41,3 +41,8 @@ class SearchRequest(BaseModel):
 class CosineSimilarityRequest(BaseModel):
     string1: str
     string2: str
+
+
+class ExtractChunksRequest(BaseModel):
+    filepath: str
+    max_words: int
