@@ -5,7 +5,15 @@ from pinecone_functions import pinecone_upsert, pinecone_search, pinecone_update
 from nlp_functions import spatie_extract_phrases, evaluate_toxicity, get_lang, extract_document_chunks
 from vector_functions import evaluate_cosine_similarity, embed
 
+import logging
+
 app = FastAPI()
+
+# Configure logging
+logging.basicConfig(level=logging.INFO, filename='app.log', filemode='a', format='%(name)s - %(levelname)s - %(message)s')
+
+# Example usage within your FastAPI application
+logger = logging.getLogger(__name__)
 
 
 @app.post("/api/upsert")
