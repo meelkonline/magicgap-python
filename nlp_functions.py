@@ -38,7 +38,7 @@ def evaluate_toxicity(text):
     toxicity_classifier = pipeline("text-classification", model=model_path, tokenizer=model_path)
     result = toxicity_classifier(text)
     score = result[0]['score']
-    if result[0]['label'] == "toxic":
+    if result[0]['label'] == "not_toxic":
         score = -score
     return float(score)
 
