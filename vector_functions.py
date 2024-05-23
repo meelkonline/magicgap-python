@@ -1,7 +1,6 @@
 from transformers import AutoModel, AutoTokenizer
 import numpy as np
 from api_requests import CosineSimilarityRequest
-from nlp_functions import spatie_extract_phrases
 
 model_name = "sentence-transformers/bert-base-nli-mean-tokens"
 tokenizer = AutoTokenizer.from_pretrained(model_name)

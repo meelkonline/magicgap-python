@@ -3,6 +3,7 @@ from api_requests import UpsertRequest, SingleStringRequest, SearchRequest, Upda
     CosineSimilarityRequest, ListRequest, ExtractChunksRequest
 from pinecone_functions import pinecone_upsert, pinecone_search, pinecone_update, pinecone_delete, pinecone_list
 from nlp_functions import spatie_extract_phrases, evaluate_toxicity, get_lang, extract_document_chunks
+from speech_functions import phonemize_audio
 from vector_functions import evaluate_cosine_similarity, embed
 
 import logging
@@ -10,7 +11,8 @@ import logging
 app = FastAPI()
 
 # Configure logging
-logging.basicConfig(level=logging.INFO, filename='app.log', filemode='a', format='%(name)s - %(levelname)s - %(message)s')
+logging.basicConfig(level=logging.INFO, filename='app.log', filemode='a',
+                    format='%(name)s - %(levelname)s - %(message)s')
 
 # Example usage within your FastAPI application
 logger = logging.getLogger(__name__)
@@ -72,3 +74,8 @@ def vectorize(request: SingleStringRequest):
     embeddings = embed(request.string)
     embeddings_list = embeddings.tolist()
     return embeddings_list
+
+
+@app.post("/api/phonemize")
+def phonemize(request: SingleStringRequest):
+    return phonemize_audio(request.string)
