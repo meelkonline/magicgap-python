@@ -1,8 +1,9 @@
 from fastapi import FastAPI
 from api_requests import UpsertRequest, SingleStringRequest, SearchRequest, UpdateRequest, DeleteRequest, \
-    CosineSimilarityRequest, ListRequest, ExtractChunksRequest
+    CosineSimilarityRequest, ListRequest, ExtractChunksRequest, MultipleStringRequest
 from pinecone_functions import pinecone_upsert, pinecone_search, pinecone_update, pinecone_delete, pinecone_list
-from nlp_functions import spatie_extract_phrases, evaluate_toxicity, get_lang, extract_document_chunks
+from nlp_functions import spatie_extract_phrases, get_lang, extract_document_chunks, \
+    evaluate_sentiment
 from speech_functions import phonemize_audio
 from vector_functions import evaluate_cosine_similarity, embed
 
@@ -13,10 +14,6 @@ app = FastAPI()
 # Configure logging
 logging.basicConfig(level=logging.INFO, filename='app.log', filemode='a',
                     format='%(name)s - %(levelname)s - %(message)s')
-
-# Example usage within your FastAPI application
-logger = logging.getLogger(__name__)
-
 
 @app.post("/api/upsert")
 def upsert(request: UpsertRequest):
@@ -58,11 +55,6 @@ def lang(request: SingleStringRequest):
     return get_lang(request.string)
 
 
-@app.post("/api/toxicity")
-def toxicity(request: SingleStringRequest):
-    return evaluate_toxicity(request.string)
-
-
 @app.post("/api/cosine_similarity")
 def cosine_similarity(request: CosineSimilarityRequest):
     score = evaluate_cosine_similarity(request)
@@ -77,5 +69,10 @@ def vectorize(request: SingleStringRequest):
 
 
 @app.post("/api/phonemize")
-def phonemize(request: SingleStringRequest):
-    return phonemize_audio(request.string)
+def phonemize(request: MultipleStringRequest):
+    return phonemize_audio(request.strings[0], request.strings[1])
+
+
+@app.post("/api/sentiment")
+def sentiment(request: MultipleStringRequest):
+    return evaluate_sentiment(request)

@@ -3,10 +3,12 @@ import os
 import spacy
 import langid
 import pdfplumber
+import torch
 from docx import Document
 from fastapi import HTTPException
+from transformers import AutoTokenizer, AutoModelForSequenceClassification, pipeline
 
-from transformers import pipeline
+from api_requests import MultipleStringRequest
 
 # Load the spaCy model
 nlp = spacy.load("en_core_web_sm")
@@ -32,15 +34,11 @@ def spatie_extract_phrases(text):
     return ' '.join(nouns_verbs)
 
 
-def evaluate_toxicity(text):
-    # nb : bof en francais : je vais te violer = not toxic 0.7
-    model_path = "citizenlab/distilbert-base-multilingual-cased-toxicity"
-    toxicity_classifier = pipeline("text-classification", model=model_path, tokenizer=model_path)
-    result = toxicity_classifier(text)
-    score = result[0]['score']
-    if result[0]['label'] == "not_toxic":
-        score = -score
-    return float(score)
+def evaluate_sentiment(request: MultipleStringRequest):
+    classifier = pipeline("sentiment-analysis", model="michellejieli/emotion_text_classifier", top_k=2)
+    result = classifier(request.strings)
+
+    return result
 
 
 def extract_document_chunks(filepath, max_words):

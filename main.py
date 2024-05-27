@@ -1,15 +1,6 @@
-# This is a sample Python script.
+from speech_functions import phonemize_audio
+string = "Hello, I'm Sue... once a lady in Paris, married to a RICH MAN. The war made me flee to this island... Now, I'm a prostitute... these sailors, they re so RUDE! I MISS the love... and the elegance of Paris... every single day."
 
-# Press Maj+F10 to execute it or replace it with your code.
-# Press Double Shift to search everywhere for classes, files, tool windows, actions, and settings.
+segments = phonemize_audio('ac75-en.wav', string)
 
-def print_hi(name):
-    # Use a breakpoint in the code line below to debug your script.
-    print(f'Hi, {name}')  # Press Ctrl+F8 to toggle the breakpoint.
-
-
-# Press the green button in the gutter to run the script.
-if __name__ == '__main__':
-    print_hi('PyCharm')
-
-# See PyCharm help at https://www.jetbrains.com/help/pycharm/
+print(segments)

@@ -6,6 +6,10 @@ class SingleStringRequest(BaseModel):
     string: str
 
 
+class MultipleStringRequest(BaseModel):
+    strings: List[str]
+
+
 class UpsertRequest(BaseModel):
     index_name: str
     id: str
