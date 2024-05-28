@@ -8,6 +8,8 @@ from dotenv import load_dotenv
 from phonemizer import phonemize
 from phonemizer.backend.espeak.wrapper import EspeakWrapper
 from transformers import AutoProcessor, AutoModelForCTC, AutoModelForAudioClassification
+
+from AudioSegmentsToVisemes import AudioSegmentsToVisemes
 from IPAtoARPAbetConverter import IPAtoARPAbetConverter
 from api_requests import MultipleStringRequest
 from nlp_functions import evaluate_sentiment
@@ -90,8 +92,8 @@ def process_segments(segments, total_audio_duration):
             predicted_ids = torch.argmax(logits, dim=-1)
             transcription = processor.batch_decode(predicted_ids)
             start_percentage = (segment['start'] / total_audio_duration) * 100
-            print(start_percentage)
-            print(transcription[0])
+            #print(start_percentage)
+            #print(transcription[0])
             results.append({
                 'type': 'speech',
                 'start': segment['start'],
@@ -233,4 +235,8 @@ def phonemize_audio(audio_path, text):
     phonemes = process_segments(audio_segments[0], total_audio_duration)
     emotions = apply_emotions(phonemes, raw_emotions, total_audio_duration)
 
-    return [phonemes, emotions, raw_emotions]
+    # Assuming 'segments' is a list of dicts with keys 'type', 'start', 'end', 'data'
+    visemes_processor = AudioSegmentsToVisemes()
+    visemes = visemes_processor.process_visemes(phonemes)
+    print(visemes)
+    return [phonemes, emotions, visemes]
