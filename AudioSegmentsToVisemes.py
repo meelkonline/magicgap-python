@@ -45,7 +45,7 @@ class AudioSegmentsToVisemes:
         possible_phonemes = {viseme: 0 for viseme in self.viseme_to_arpabet}
         precision = 4
         multiplier = 1000
-        blend_offset = 500
+        blend_offset = 250
 
         for segment in segments:
             if segment['type'] == 'speech' and segment['data']:
@@ -99,11 +99,7 @@ class AudioSegmentsToVisemes:
                             final[frame + j][current_viseme] = 1.0 - step * j
                         final[frame + j][next_viseme] = step * j
 
-            # Apply recursive formatting
-        #final_formatted = {frame: format_float_values(frame_data) for frame, frame_data in final.items()}
-
-        #return [final_formatted[frame] for frame in sorted(final_formatted.keys())]
-        # Multiply each float by 1000 in the final results before returning
         scaled_final_list = [[int(value * 1000) for value in frame_data.values()] for frame_data in final.values()]
+
         return scaled_final_list
 
