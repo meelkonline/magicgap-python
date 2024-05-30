@@ -92,8 +92,6 @@ def process_segments(segments, total_audio_duration):
             predicted_ids = torch.argmax(logits, dim=-1)
             transcription = processor.batch_decode(predicted_ids)
             start_percentage = (segment['start'] / total_audio_duration) * 100
-            #print(start_percentage)
-            #print(transcription[0])
             results.append({
                 'type': 'speech',
                 'start': segment['start'],
@@ -123,10 +121,31 @@ def get_audio_duration_from_file(file_path):
     return duration
 
 
+def split_sentence(sentence):
+    words = sentence.split()
+    first_part = []
+    total_length = len(sentence.replace(' ', ''))  # Total length without spaces
+    current_length = 0
+
+    for word in words:
+        if current_length + len(word) <= total_length / 2:
+            first_part.append(word)
+            current_length += len(word)
+        else:
+            break
+
+    # Join words to form the first part and the remaining words as the second part
+    first_part_text = ' '.join(first_part)
+    second_part_text = ' '.join(words[len(first_part):])
+
+    return first_part_text, second_part_text
+
+
 def apply_emotions(segments, emotions, total_audio_duration):
     # Update emotion_positions with already calculated start percentages in emotions
-
     results = []
+    texts = []
+    segment_max_length = 20
     for segment in segments:
         if segment['type'] == 'speech':
             segment_duration = segment['end'] - segment['start']
@@ -136,7 +155,7 @@ def apply_emotions(segments, emotions, total_audio_duration):
             # Calculate the relative start time percentage of the segment
 
             # Split segments with more than twelve characters
-            if segment_characters > 12:
+            if segment_characters > segment_max_length:
                 split_point = segment_characters // 2
                 # Calculate the time duration of the first split segment
                 split_time_duration = (split_point / segment_characters) * segment_duration
@@ -150,16 +169,21 @@ def apply_emotions(segments, emotions, total_audio_duration):
                 {'start_time': segment_start_time + split_time_duration,
                  'duration': segment_duration - split_time_duration,
                  'start_percentage': (segment_start_time + split_time_duration) / total_audio_duration * 100}
-            ] if segment_characters > 12 else [{'start_time': segment_start_time, 'duration': segment_duration,
-                                                'start_percentage': segment['start_percentage']}]
+            ] if segment_characters > segment_max_length else [
+                {'start_time': segment_start_time, 'duration': segment_duration,
+                 'start_percentage': segment['start_percentage']}]
 
             for sub_segment in sub_segments:
                 # Find the closest emotion based on character distribution and start percentages
-                closest_emotion = min(emotions, key=lambda e: abs(
-                    e['start_percentage'] - sub_segment['start_percentage']))
+                closest_emotion = min(emotions,
+                                      key=lambda e: abs(e['start_percentage'] - sub_segment['start_percentage']))
+
+                text = closest_emotion['text']
+                print(text)
 
                 results.append({
                     'emotion': closest_emotion['sentiment'],
+                    'text': text,
                     'time': sub_segment['start_time'],  # Use the calculated start time of the segment or sub-segment
                     'start_percentage': sub_segment['start_percentage']
                 })
@@ -192,7 +216,6 @@ def phonemize_audio(audio_path, text):
     for sentence_or_point in sentences_with_points:
         if len(sentence_or_point.strip()) > 1:
             sentence = sentence_or_point.strip()
-
             ipa_string = phonemize(sentence, preserve_punctuation=False)
             converter = IPAtoARPAbetConverter(ipa_string)
             arpabet = converter.get_arpabet()
@@ -209,21 +232,18 @@ def phonemize_audio(audio_path, text):
     # Get  Sentences Sentiment (except neutral)
     sentiments = []
     multi_sentiments = evaluate_sentiment(MultipleStringRequest(strings=sentences))
-
     for multi_sentiment in multi_sentiments:
         if multi_sentiment[0]['label'] == "neutral":
             sentiments.append(multi_sentiment[1])
         else:
             sentiments.append(multi_sentiment[0])
 
-    for sentiment in sentiments:
-        print(sentiment)
-
     # Combine sentences with their positions and sentiments
     raw_emotions = []
     for i, sentence in enumerate(sentences):
         raw_emotions.append({
-            'sentence': sentence,
+            'id': i,
+            'text': sentence,
             'arpabet': arpabets[i],
             'start_percentage': position_percentages[i],
             'sentiment': sentiments[i]
@@ -238,5 +258,5 @@ def phonemize_audio(audio_path, text):
     # Assuming 'segments' is a list of dicts with keys 'type', 'start', 'end', 'data'
     visemes_processor = AudioSegmentsToVisemes()
     visemes = visemes_processor.process_visemes(phonemes)
-    print(visemes)
+    # print(visemes)
     return [phonemes, emotions, visemes]

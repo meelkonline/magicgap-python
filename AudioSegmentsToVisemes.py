@@ -45,7 +45,7 @@ class AudioSegmentsToVisemes:
         possible_phonemes = {viseme: 0 for viseme in self.viseme_to_arpabet}
         precision = 4
         multiplier = 1000
-        blend_offset = 250
+        blend_offset = 150
 
         for segment in segments:
             if segment['type'] == 'speech' and segment['data']:
