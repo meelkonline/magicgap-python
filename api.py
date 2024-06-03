@@ -76,3 +76,4 @@ def phonemize(request: MultipleStringRequest):
 @app.post("/api/sentiment")
 def sentiment(request: MultipleStringRequest):
     return evaluate_sentiment(request)
+

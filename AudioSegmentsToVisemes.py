@@ -1,3 +1,8 @@
+import re
+
+from bibtexparser import splitter
+
+
 class AudioSegmentsToVisemes:
     def __init__(self):
         self.viseme_to_arpabet = {
@@ -11,25 +16,71 @@ class AudioSegmentsToVisemes:
             'SS': ['S', 'Z', 'ZH'],
             'nn': ['N', 'L', 'EN', 'EL', 'NX', 'ENG'],
             'RR': ['R', 'ER', 'AXR'],
-            'aa': ['AA', 'A', 'AH', 'AX'],
-            'E': ['EH', 'E', 'Y'],
+            'aa': ['AA', 'A', 'AH', 'AX', 'AY', 'H', 'HH'],
+            'E': ['EH', 'E', 'Y','EY'],
             'I': ['IH', 'IY', 'IX'],
             'O': ['OW', 'OY', 'AOA'],
             'U': ['UH', 'UW', 'UX']
+            #add Z, H/HH (h-igh)
         }
+
+        self.viseme_to_ipa = {
+            'sil': ['—', '-'],
+            'PP': ['p', 'b', 'm', 'b̚', 'p̚', 'm̩', 'æ', 'aʊ', 'w'],
+            'FF': ['f', 'v'],
+            'TH': ['θ', 'ð'],
+            'DD': ['t', 'd', 'ɾ', 'd̚', 't̚', 'l', 'l̩'],
+            'kk': ['k', 'ɡ', 'ɡ̚', 'k̚', 'ɾ̃', 'ŋ', 'ɔ'],
+            'CH': ['tʃ', 'dʒ', 'ʃ'],
+            'SS': ['s', 'z', 'ʒ'],
+            'nn': ['n', 'l', 'n̩', 'l̩', 'ɾ̃', 'ŋ̍'],
+            'RR': ['ɹ', 'ɝ', 'ɚ'],
+            'aa': ['ɑ', 'ɒ', 'A', 'ʌ', 'ə', 'aɪ', 'h', 'h'],
+            'E': ['ɛ', 'ɛ', 'j', 'eɪ'],
+            'I': ['ɪ', 'i', 'ɨ'],
+            'O': ['oʊ', 'ɔɪ'],
+            'U': ['ʊ', 'u', 'ʉ']
+            # add Z, H/HH (h-igh)
+        }
+        # Create a flattened list of all phonemes
+        all_phonemes = [phoneme for sublist in self.viseme_to_ipa.values() for phoneme in sublist]
+        # Sort phonemes by length to prioritize longer phonemes in regex matching
+        all_phonemes_sorted = sorted(set(all_phonemes), key=len, reverse=True)
+        # Create a regex pattern that matches any of the phonemes
+        self.phoneme_pattern = re.compile('|'.join(re.escape(phoneme) for phoneme in all_phonemes_sorted))
+
+    def split_ipa(self, ipa_text):
+        return self.phoneme_pattern.findall(ipa_text)
 
     def phonemes_to_visemes(self, phonemes):
         visemes = []
-        for phoneme in phonemes.split():
-            found = False
-            for viseme, values in self.viseme_to_arpabet.items():
-                if phoneme.upper() in values:
-                    visemes.append(viseme)
-                    found = True
-                    break
-            if not found:
-                print(f'Phoneme not found: {phoneme}')
+        phoneme_list = self.split_ipa(phonemes)
+        for phoneme in phoneme_list:
+            if self.find_and_add_ipa_viseme(phoneme, visemes):
+                continue
+
+            print("not found"+phoneme)
+
         return visemes
+
+    def find_and_add_ipa_viseme(self, phoneme, visemes):
+        found = False
+        for viseme, values in self.viseme_to_ipa.items():
+            if phoneme in values:
+                visemes.append(viseme)
+                found = True
+                break
+        return found
+
+    def find_and_add_viseme(self, phoneme, visemes):
+        found = False
+        phoneme_upper = phoneme.upper()
+        for viseme, values in self.viseme_to_arpabet.items():
+            if phoneme_upper in values:
+                visemes.append(viseme)
+                found = True
+                break
+        return found
 
     def get_next_viseme(self, results, current_frame):
         for frame, values in sorted(results.items()):
@@ -45,7 +96,7 @@ class AudioSegmentsToVisemes:
         possible_phonemes = {viseme: 0 for viseme in self.viseme_to_arpabet}
         precision = 4
         multiplier = 1000
-        blend_offset = 150
+        blend_offset = 100
 
         for segment in segments:
             if segment['type'] == 'speech' and segment['data']:

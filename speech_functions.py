@@ -17,8 +17,11 @@ from nlp_functions import evaluate_sentiment
 # Path to ffmpeg executable
 ffmpeg_path = 'C:\\ffmpeg\\bin\\ffmpeg.exe'  # Adjust if needed
 
-processor = AutoProcessor.from_pretrained("Bluecast/wav2vec2-Phoneme")
-model = AutoModelForCTC.from_pretrained("Bluecast/wav2vec2-Phoneme")
+# processor = AutoProcessor.from_pretrained("Bluecast/wav2vec2-Phoneme")
+# model = AutoModelForCTC.from_pretrained("Bluecast/wav2vec2-Phoneme")
+
+processor = AutoProcessor.from_pretrained("vitouphy/wav2vec2-xls-r-300m-timit-phoneme")
+model = AutoModelForCTC.from_pretrained("vitouphy/wav2vec2-xls-r-300m-timit-phoneme")
 
 
 # emotionModel = AutoModelForAudioClassification.from_pretrained("3loi/SER-Odyssey-Baseline-WavLM-Categorical-Attributes",
@@ -79,11 +82,11 @@ def create_audio_segments(audio_path, silences):
 
 
 # Step 3: Process each speech segment with the model
-def process_segments(segments, total_audio_duration):
+def process_segments(segments, total_chars):
     results = []
     min_length = 160  # Minimum length to ensure the segment is long enough (0.01 seconds at 16000 Hz)
-    current_phoneme_index = 0
     margin = 3
+    char_index = 0
     for segment in segments:
         if segment['type'] == 'speech' and len(segment['data']) >= min_length:
             inputs = processor(segment['data'], sampling_rate=16000, return_tensors="pt", padding=True)
@@ -91,7 +94,11 @@ def process_segments(segments, total_audio_duration):
                 logits = model(inputs.input_values).logits
             predicted_ids = torch.argmax(logits, dim=-1)
             transcription = processor.batch_decode(predicted_ids)
-            start_percentage = (segment['start'] / total_audio_duration) * 100
+            print(transcription[0])
+            start_percentage = char_index / total_chars
+            char_index = char_index + count_characters(transcription[0])
+            print('start_percentage :')
+            print(start_percentage)
             results.append({
                 'type': 'speech',
                 'start': segment['start'],
@@ -100,7 +107,6 @@ def process_segments(segments, total_audio_duration):
                 'start_percentage': start_percentage,
                 'data': transcription[0]
             })
-
         else:
             # Adding silence segments to results
             results.append({
@@ -114,11 +120,6 @@ def process_segments(segments, total_audio_duration):
 def count_characters(text):
     character_count = len(text.replace(" ", ""))
     return character_count
-
-
-def get_audio_duration_from_file(file_path):
-    duration = librosa.get_duration(filename=file_path)
-    return duration
 
 
 def split_sentence(sentence):
@@ -141,44 +142,69 @@ def split_sentence(sentence):
     return first_part_text, second_part_text
 
 
-def apply_emotions(segments, emotions, total_audio_duration):
+def get_next_speech_segment(segments, index):
+    segment_index = -1
+    for segment in segments:
+        segment_index = segment_index + 1
+        if segment_index <= index:
+            continue
+        if segment['type'] == 'speech':
+            return segment
+
+    return []
+
+
+def apply_emotions(segments, emotions, total_chars):
     # Update emotion_positions with already calculated start percentages in emotions
     results = []
     texts = []
     segment_max_length = 20
+    char_index = 0
+    segment_index = -1
+    print(emotions)
     for segment in segments:
+        segment_index = segment_index + 1
         if segment['type'] == 'speech':
             segment_duration = segment['end'] - segment['start']
             segment_start_time = segment['start']
             segment_characters = count_characters(segment['data'])
 
-            # Calculate the relative start time percentage of the segment
+            split_time_duration = segment_duration
 
             # Split segments with more than twelve characters
             if segment_characters > segment_max_length:
+                next_speech_segment = get_next_speech_segment(segments, segment_index)
+                if len(next_speech_segment) > 0:
+                    next_percentage = next_speech_segment['start_percentage']
+                else:
+                    next_percentage = 1
+
                 split_point = segment_characters // 2
                 # Calculate the time duration of the first split segment
                 split_time_duration = (split_point / segment_characters) * segment_duration
-            else:
-                split_time_duration = segment_duration
 
             # Define sub-segments for emotion matching if split
             sub_segments = [
-                {'start_time': segment_start_time, 'duration': split_time_duration,
+                {'start_time': segment_start_time,
                  'start_percentage': segment['start_percentage']},
                 {'start_time': segment_start_time + split_time_duration,
-                 'duration': segment_duration - split_time_duration,
-                 'start_percentage': (segment_start_time + split_time_duration) / total_audio_duration * 100}
+                 'start_percentage': segment['start_percentage'] + (
+                         (next_percentage - segment['start_percentage']) / 2)}
             ] if segment_characters > segment_max_length else [
-                {'start_time': segment_start_time, 'duration': segment_duration,
-                 'start_percentage': segment['start_percentage']}]
+                {'start_time': segment_start_time, 'start_percentage': segment['start_percentage']}]
+
+            char_index = char_index + segment_characters
 
             for sub_segment in sub_segments:
+                print('------------')
+                print(sub_segment)
                 # Find the closest emotion based on character distribution and start percentages
                 closest_emotion = min(emotions,
-                                      key=lambda e: abs(e['start_percentage'] - sub_segment['start_percentage']))
+                                      key=lambda e: abs(e['start_percentage']/100 - sub_segment['start_percentage']))
 
                 text = closest_emotion['text']
+
+                print(closest_emotion['sentiment'])
                 print(text)
 
                 results.append({
@@ -189,13 +215,6 @@ def apply_emotions(segments, emotions, total_audio_duration):
                 })
 
     return results
-
-
-def calculate_total_audio_duration(segments):
-    if segments:
-        # Assuming segments are already sorted by their end time, the last segment's end time is the total duration
-        return segments[-1]['end']
-    return 0
 
 
 def phonemize_audio(audio_path, text):
@@ -218,10 +237,10 @@ def phonemize_audio(audio_path, text):
             sentence = sentence_or_point.strip()
             ipa_string = phonemize(sentence, preserve_punctuation=False)
             converter = IPAtoARPAbetConverter(ipa_string)
-            arpabet = converter.get_arpabet()
+            # arpabet = converter.get_arpabet()
             sentences.append(sentence)
-            arpabets.append(arpabet)
-            num_char = count_characters(arpabet)
+            # arpabets.append(arpabet)
+            num_char = count_characters(ipa_string)
             positions.append(cumulative_chars)  # Save the start position of the current sentence
             cumulative_chars += num_char  # Update cumulative characters
             total_chars += num_char
@@ -240,11 +259,11 @@ def phonemize_audio(audio_path, text):
 
     # Combine sentences with their positions and sentiments
     raw_emotions = []
+    texts = []
     for i, sentence in enumerate(sentences):
         raw_emotions.append({
-            'id': i,
             'text': sentence,
-            'arpabet': arpabets[i],
+            # 'arpabet': arpabets[i],
             'start_percentage': position_percentages[i],
             'sentiment': sentiments[i]
         })
@@ -252,11 +271,11 @@ def phonemize_audio(audio_path, text):
     silences = detect_silences(audio_path)
     audio_segments = create_audio_segments(audio_path, silences)
     total_audio_duration = audio_segments[1]
-    phonemes = process_segments(audio_segments[0], total_audio_duration)
+    phonemes = process_segments(audio_segments[0], total_chars)
     emotions = apply_emotions(phonemes, raw_emotions, total_audio_duration)
 
     # Assuming 'segments' is a list of dicts with keys 'type', 'start', 'end', 'data'
     visemes_processor = AudioSegmentsToVisemes()
     visemes = visemes_processor.process_visemes(phonemes)
     # print(visemes)
-    return [phonemes, emotions, visemes]
+    return [phonemes, emotions, visemes, texts]
