@@ -35,7 +35,7 @@ class AudioSegmentsToVisemes:
             'SS': ['s', 'z', 'ʒ'],
             'nn': ['n', 'l', 'n̩', 'l̩', 'ɾ̃', 'ŋ̍'],
             'RR': ['ɹ', 'ɝ', 'ɚ'],
-            'aa': ['ɑ', 'ɒ', 'A', 'ʌ', 'ə', 'aɪ', 'h', 'h'],
+            'aa': ['ɑ', 'ɒ', 'A', 'ʌ', 'ə', 'aɪ', 'h'],
             'E': ['ɛ', 'ɛ', 'j', 'eɪ'],
             'I': ['ɪ', 'i', 'ɨ'],
             'O': ['oʊ', 'ɔɪ'],
@@ -143,12 +143,17 @@ class AudioSegmentsToVisemes:
                     step = 1 / next_viseme_distance
                     for j in range(1, next_viseme_distance):
                         final[frame + j] = values.copy()
-
                         for viseme in possible_phonemes:
                             final[frame + j][viseme] = values[viseme] * (1.0 - step * j)
-                        if current_viseme != 'sil':  # Ensure current viseme fades out
-                            final[frame + j][current_viseme] = 1.0 - step * j
-                        final[frame + j][next_viseme] = step * j
+                        if current_viseme != 'sil':  # Ensure current viseme fades out, if different from previous
+                            if current_viseme != next_viseme:
+                                final[frame + j][current_viseme] = 1.0 - step * j
+                                final[frame + j][next_viseme] = step * j
+                            else:
+                                final[frame + j][current_viseme] = 1.0
+                                final[frame + j][next_viseme] = 1.0
+                        else:
+                            final[frame + j][next_viseme] = step * j
 
         scaled_final_list = [[int(value * 1000) for value in frame_data.values()] for frame_data in final.values()]
 

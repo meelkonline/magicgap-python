@@ -85,7 +85,6 @@ def create_audio_segments(audio_path, silences):
 def process_segments(segments, total_chars):
     results = []
     min_length = 160  # Minimum length to ensure the segment is long enough (0.01 seconds at 16000 Hz)
-    margin = 3
     char_index = 0
     for segment in segments:
         if segment['type'] == 'speech' and len(segment['data']) >= min_length:
@@ -94,11 +93,9 @@ def process_segments(segments, total_chars):
                 logits = model(inputs.input_values).logits
             predicted_ids = torch.argmax(logits, dim=-1)
             transcription = processor.batch_decode(predicted_ids)
-            print(transcription[0])
+            # print(transcription[0])
             start_percentage = char_index / total_chars
             char_index = char_index + count_characters(transcription[0])
-            print('start_percentage :')
-            print(start_percentage)
             results.append({
                 'type': 'speech',
                 'start': segment['start'],
@@ -154,14 +151,13 @@ def get_next_speech_segment(segments, index):
     return []
 
 
-def apply_emotions(segments, emotions, total_chars):
+def apply_emotions(segments, raw_emotions):
     # Update emotion_positions with already calculated start percentages in emotions
     results = []
-    texts = []
+    used_emotions = []
     segment_max_length = 20
     char_index = 0
     segment_index = -1
-    print(emotions)
     for segment in segments:
         segment_index = segment_index + 1
         if segment['type'] == 'speech':
@@ -196,23 +192,49 @@ def apply_emotions(segments, emotions, total_chars):
             char_index = char_index + segment_characters
 
             for sub_segment in sub_segments:
-                print('------------')
-                print(sub_segment)
+
                 # Find the closest emotion based on character distribution and start percentages
-                closest_emotion = min(emotions,
-                                      key=lambda e: abs(e['start_percentage']/100 - sub_segment['start_percentage']))
+                closest_emotion = min(raw_emotions,
+                                      key=lambda e: abs(e['start_percentage'] / 100 - sub_segment['start_percentage']))
 
                 text = closest_emotion['text']
-
-                print(closest_emotion['sentiment'])
-                print(text)
-
+                result_index = len(results)
                 results.append({
+                    'index': result_index,
                     'emotion': closest_emotion['sentiment'],
                     'text': text,
                     'time': sub_segment['start_time'],  # Use the calculated start time of the segment or sub-segment
                     'start_percentage': sub_segment['start_percentage']
                 })
+
+                if all(emotion['id'] != closest_emotion['id'] for emotion in used_emotions):
+                    used_emotions.append({
+                        'id': closest_emotion['id'],
+                        'text': closest_emotion['text'],
+                        'result_index': result_index
+                    })
+
+    # Dictionary to hold updates before applying
+    updates = {emotion['id']: emotion['text'] for emotion in used_emotions}
+
+    used_ids = set(emotion['id'] for emotion in used_emotions)
+
+    for raw_emotion in raw_emotions:
+        if raw_emotion['id'] not in used_ids:
+            for i in range(len(used_emotions) - 1, -1, -1):
+                if used_emotions[i]['id'] < raw_emotion['id']:
+                    # Concatenate raw_emotion text to the appropriate used_emotion
+                    updates[used_emotions[i]['id']] = used_emotions[i]['text'] + " " + raw_emotion['text']
+                    used_ids.add(raw_emotion['id'])  # Mark this raw_emotion as used
+                    break
+
+        # Apply updates from the updates dictionary
+    for used_emotion in used_emotions:
+        text = updates[used_emotion['id']]
+        for result in results:
+            if result['index'] == used_emotion['result_index']:
+                result['text'] = text
+                break
 
     return results
 
@@ -236,10 +258,7 @@ def phonemize_audio(audio_path, text):
         if len(sentence_or_point.strip()) > 1:
             sentence = sentence_or_point.strip()
             ipa_string = phonemize(sentence, preserve_punctuation=False)
-            converter = IPAtoARPAbetConverter(ipa_string)
-            # arpabet = converter.get_arpabet()
             sentences.append(sentence)
-            # arpabets.append(arpabet)
             num_char = count_characters(ipa_string)
             positions.append(cumulative_chars)  # Save the start position of the current sentence
             cumulative_chars += num_char  # Update cumulative characters
@@ -262,6 +281,7 @@ def phonemize_audio(audio_path, text):
     texts = []
     for i, sentence in enumerate(sentences):
         raw_emotions.append({
+            'id': i,
             'text': sentence,
             # 'arpabet': arpabets[i],
             'start_percentage': position_percentages[i],
@@ -272,7 +292,7 @@ def phonemize_audio(audio_path, text):
     audio_segments = create_audio_segments(audio_path, silences)
     total_audio_duration = audio_segments[1]
     phonemes = process_segments(audio_segments[0], total_chars)
-    emotions = apply_emotions(phonemes, raw_emotions, total_audio_duration)
+    emotions = apply_emotions(phonemes, raw_emotions)
 
     # Assuming 'segments' is a list of dicts with keys 'type', 'start', 'end', 'data'
     visemes_processor = AudioSegmentsToVisemes()
