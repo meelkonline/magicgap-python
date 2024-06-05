@@ -6,13 +6,11 @@ model_name = "sentence-transformers/bert-base-nli-mean-tokens"
 tokenizer = AutoTokenizer.from_pretrained(model_name)
 model = AutoModel.from_pretrained(model_name)
 
-
 def embed(text):
     inputs = tokenizer(text, return_tensors="pt", padding=True, truncation=True, max_length=128)
     outputs = model(**inputs)
     embeddings = outputs.last_hidden_state.mean(dim=1)
     return embeddings
-
 
 def evaluate_cosine_similarity(request: CosineSimilarityRequest):
 
