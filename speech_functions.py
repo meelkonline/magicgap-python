@@ -14,8 +14,8 @@ from api_requests import MultipleStringRequest
 from nlp_functions import evaluate_sentiment
 
 # Path to ffmpeg executable
-ffmpeg_path = 'C:\\ffmpeg\\bin\\ffmpeg.exe'  # Adjust if needed
-
+#ffmpeg_path = 'C:\\ffmpeg\\bin\\ffmpeg.exe'  # Adjust if needed
+ffmpeg_path = 'ffmpeg'  # Adjust if needed
 # processor = AutoProcessor.from_pretrained("Bluecast/wav2vec2-Phoneme")
 # model = AutoModelForCTC.from_pretrained("Bluecast/wav2vec2-Phoneme")
 
@@ -25,6 +25,7 @@ model = AutoModelForCTC.from_pretrained("Bluecast/wav2vec2-Phoneme")
 
 # Step 1: Detect silences using ffmpeg
 def detect_silences(audio_path, noise_level="-30dB", duration=0.2):
+
     command = f"{ffmpeg_path} -i {audio_path} -af silencedetect=noise={noise_level}:d={duration} -f null - 2>&1"
     output = subprocess.check_output(command, shell=True, stderr=subprocess.STDOUT).decode()
 
