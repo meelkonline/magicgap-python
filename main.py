@@ -1,37 +1,64 @@
-import librosa
-import torch
+import requests
+import json
+import base64
 
-from speech_functions import phonemize_audio
+VOICE_ID = "gqTiMLeyBK379ZTKHDMt"  # Rachel
+YOUR_XI_API_KEY = "329ba09e9b78f4e230d51ec02cd2fd0f"
 
-audio_path = 'ac75-en.wav'
-string = "Hello, I'm Sue... once a lady in Paris, married to a RICH MAN. The war made me flee to this island... Now, I'm a prostitute... these sailors, they re so RUDE! I MISS the love... and the elegance of Paris... every single day."
-# string = "Les voyelles en Français sont A...E...I....O...U"
-# audio_path = 'ac63-fr.wav'
+url = f"https://api.elevenlabs.io/v1/text-to-speech/{VOICE_ID}/stream/with-timestamps"
 
-segments = phonemize_audio(audio_path, string)
-print(segments[2])
-#
-# from transformers import AutoProcessor, AutoModelForSpeechSeq2Seq, AutoModelForCTC
-#
-# audio, sample_rate = librosa.load(audio_path, sr=16000)
-# processor = AutoProcessor.from_pretrained("vitouphy/wav2vec2-xls-r-300m-timit-phoneme")
-# model = AutoModelForCTC.from_pretrained("vitouphy/wav2vec2-xls-r-300m-timit-phoneme")
-#
-# # processor = AutoProcessor.from_pretrained("Cnam-LMSSC/wav2vec2-french-phonemizer")
-# # model = AutoModelForCTC.from_pretrained("Cnam-LMSSC/wav2vec2-french-phonemizer")
-#
-# inputs = processor(audio, sampling_rate=16000, return_tensors="pt", padding=True)
-# with torch.no_grad():
-#     logits = model(inputs.input_values).logits
-# predicted_ids = torch.argmax(logits, dim=-1)
-# transcription = processor.batch_decode(predicted_ids)
-# print(transcription)
-#
-#
-# processor = AutoProcessor.from_pretrained("dg96/whisper-finetuning-phoneme-transcription-g2p-large-dataset-space-seperated-phonemes")
-# model = AutoModelForSpeechSeq2Seq.from_pretrained("dg96/whisper-finetuning-phoneme-transcription-g2p-large-dataset-space-seperated-phonemes")
-# inputs = processor(audio, return_tensors="pt")
-# input_features = inputs.input_features
-# generated_ids = model.generate(inputs=input_features)
-# transcription = processor.batch_decode(generated_ids, skip_special_tokens=True)[0]
-# print(transcription)
+headers = {
+    "Content-Type": "application/json",
+    "xi-api-key": YOUR_XI_API_KEY
+}
+
+data = {
+    "text": "Born and raised in the charming south, I can add a touch of sweet southern hospitality to your audiobooks and podcasts"
+    ,
+    "model_id": "eleven_multilingual_v2",
+    "voice_settings": {
+        "stability": 0.5,
+        "similarity_boost": 0.75
+    }
+}
+
+response = requests.post(
+    url,
+    json=data,
+    headers=headers,
+    stream=True
+)
+
+if response.status_code != 200:
+    print(f"Error encountered, status: {response.status_code}, "
+          f"content: {response.text}")
+    quit()
+
+audio_bytes = b""
+characters = []
+character_start_times_seconds = []
+character_end_times_seconds = []
+
+for line in response.iter_lines():
+    if line:  # filter out keep-alive new line
+        # convert the response which contains bytes into a JSON string from utf-8 encoding
+        json_string = line.decode("utf-8")
+
+        # parse the JSON string and load the data as a dictionary
+        response_dict = json.loads(json_string)
+
+        # the "audio_base64" entry in the dictionary contains the audio as a base64 encoded string,
+        # we need to decode it into bytes in order to save the audio as a file
+        audio_bytes_chunk = base64.b64decode(response_dict["audio_base64"])
+        audio_bytes += audio_bytes_chunk
+
+        if response_dict["alignment"] is not None:
+            characters.extend(response_dict["alignment"]["characters"])
+            character_start_times_seconds.extend(response_dict["alignment"]["character_start_times_seconds"])
+            character_end_times_seconds.extend(response_dict["alignment"]["character_end_times_seconds"])
+
+print({
+    "characters": characters,
+    "character_start_times_seconds": character_start_times_seconds,
+    "character_end_times_seconds": character_end_times_seconds
+})

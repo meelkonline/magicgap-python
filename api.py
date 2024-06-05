@@ -15,6 +15,7 @@ app = FastAPI()
 logging.basicConfig(level=logging.INFO, filename='app.log', filemode='a',
                     format='%(name)s - %(levelname)s - %(message)s')
 
+
 @app.post("/api/upsert")
 def upsert(request: UpsertRequest):
     return pinecone_upsert(request)
@@ -69,11 +70,10 @@ def vectorize(request: SingleStringRequest):
 
 
 @app.post("/api/phonemize")
-def phonemize(request: MultipleStringRequest):
-    return phonemize_audio(request.strings[0], request.strings[1])
+def phonemize(request: SingleStringRequest):
+    return phonemize_audio(request.string)
 
 
 @app.post("/api/sentiment")
 def sentiment(request: MultipleStringRequest):
     return evaluate_sentiment(request)
-

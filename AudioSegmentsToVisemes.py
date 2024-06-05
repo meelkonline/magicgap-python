@@ -21,7 +21,6 @@ class AudioSegmentsToVisemes:
             'I': ['IH', 'IY', 'IX'],
             'O': ['OW', 'OY', 'AOA'],
             'U': ['UH', 'UW', 'UX']
-            #add Z, H/HH (h-igh)
         }
 
         self.viseme_to_ipa = {
@@ -40,7 +39,6 @@ class AudioSegmentsToVisemes:
             'I': ['ɪ', 'i', 'ɨ'],
             'O': ['oʊ', 'ɔɪ'],
             'U': ['ʊ', 'u', 'ʉ']
-            # add Z, H/HH (h-igh)
         }
         # Create a flattened list of all phonemes
         all_phonemes = [phoneme for sublist in self.viseme_to_ipa.values() for phoneme in sublist]
@@ -75,7 +73,7 @@ class AudioSegmentsToVisemes:
     def find_and_add_viseme(self, phoneme, visemes):
         found = False
         phoneme_upper = phoneme.upper()
-        for viseme, values in self.viseme_to_arpabet.items():
+        for viseme, values in self.viseme_to_ipa.items():
             if phoneme_upper in values:
                 visemes.append(viseme)
                 found = True
