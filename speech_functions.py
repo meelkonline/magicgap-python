@@ -113,5 +113,8 @@ def phonemize_audio(audio_path):
     visemes_processor = AudioSegmentsToVisemes()
     visemes = visemes_processor.process_visemes(phonemes)
 
+    for v in visemes:
+        print(v)
+
     return [phonemes, visemes]
 

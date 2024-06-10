@@ -17,7 +17,7 @@ class AudioSegmentsToVisemes:
             'nn': ['N', 'L', 'EN', 'EL', 'NX', 'ENG'],
             'RR': ['R', 'ER', 'AXR'],
             'aa': ['AA', 'A', 'AH', 'AX', 'AY', 'H', 'HH'],
-            'E': ['EH', 'E', 'Y','EY'],
+            'E': ['EH', 'E', 'Y', 'EY'],
             'I': ['IH', 'IY', 'IX'],
             'O': ['OW', 'OY', 'AOA'],
             'U': ['UH', 'UW', 'UX']
@@ -34,12 +34,13 @@ class AudioSegmentsToVisemes:
             'SS': ['s', 'z', 'ʒ'],
             'nn': ['n', 'l', 'n̩', 'l̩', 'ɾ̃', 'ŋ̍'],
             'RR': ['ɹ', 'ɝ', 'ɚ'],
-            'aa': ['ɑ', 'ɒ', 'A', 'ʌ', 'ə', 'aɪ', 'h'],
-            'E': ['ɛ', 'ɛ', 'j', 'eɪ'],
+            'aa': ['ɑ', 'ɒ', 'A', 'ʌ', 'ə', 'aɪ', 'h', 'ɑ̃'],
+            'E': ['ɛ', 'ɛ', 'j', 'eɪ', 'ɛ̃'],
             'I': ['ɪ', 'i', 'ɨ'],
-            'O': ['oʊ', 'ɔɪ'],
+            'O': ['oʊ', 'ɔɪ', 'œ̃', 'ɔ̃'],
             'U': ['ʊ', 'u', 'ʉ']
         }
+
         # Create a flattened list of all phonemes
         all_phonemes = [phoneme for sublist in self.viseme_to_ipa.values() for phoneme in sublist]
         # Sort phonemes by length to prioritize longer phonemes in regex matching
@@ -57,7 +58,7 @@ class AudioSegmentsToVisemes:
             if self.find_and_add_ipa_viseme(phoneme, visemes):
                 continue
 
-            print("not found"+phoneme)
+            print("not found" + phoneme)
 
         return visemes
 
@@ -89,9 +90,56 @@ class AudioSegmentsToVisemes:
                     return viseme, frame - current_frame
         return None, None
 
+    def get_factors(self, viseme):
+        # Mapping from visemes to their influencing visemes with factors
+        coarticulation_rules = {
+            'sil': [],
+            'PP': [('FF', 0.25)],
+            'FF': [('PP', 0.25)],
+            'TH': [('SS', 0.25)],
+            'DD': [('nn', 0.33), ('SS', 0.25)],
+            'kk': [('nn', 0.33)],
+            'CH': [('SS', 0.33)],
+            'SS': [('DD', 0.33), ('CH', 0.33)],
+            'nn': [('kk', 0.33), ('DD', 0.25)],
+            'RR': [('aa', 0.25)],
+            'aa': [('RR', 0.25)],
+            'E': [('I', 0.20), ('aa', 0.20)],
+            'I': [('E', 0.20)],
+            'O': [('U', 0.20)],
+            'U': [('O', 0.20)]
+        }
+        return coarticulation_rules.get(viseme, [])
+
+    def adjust_next_viseme_intensity(self, current_viseme, next_viseme):
+        # Define relationships or proximity between visemes
+        proximity_map = {
+            'PP': {'FF': 0.8, 'TH': 0.5, 'DD': 0.7},  # Example: 'PP' transitions smoothly to 'FF'
+            'FF': {'PP': 0.8, 'TH': 0.6},
+            'TH': {'FF': 0.6, 'DD': 0.5},
+            'DD': {'TH': 0.5, 'SS': 0.4, 'nn': 0.7},  # 'DD' and 'nn' share similar tongue placements
+            'kk': {'nn': 0.5, 'CH': 0.4},  # Velar sounds can lead into ch/sh sounds or nasal sounds
+            'CH': {'SS': 0.8, 'kk': 0.4},  # Post-alveolar affricates/fricatives are close to sibilants
+            'SS': {'DD': 0.4, 'CH': 0.8},  # Sibilants share articulation locations
+            'nn': {'DD': 0.7, 'kk': 0.5},  # Nasal and alveolar/velar sounds
+            'RR': {'aa': 0.5},  # Rhotics can influence open vowels
+            'aa': {'RR': 0.5, 'E': 0.3},  # Open vowels transitioning to rhotics or front vowels
+            'E': {'I': 0.6, 'aa': 0.3},  # Front vowels are close in articulation
+            'I': {'E': 0.6, 'O': 0.4},  # High front to mid-back vowel transition
+            'O': {'U': 0.7, 'I': 0.4},  # Rounded vowels transition smoothly
+            'U': {'O': 0.7}  # Close back vowels to mid-back vowels
+        }
+
+        # Default to full intensity if no specific proximity is defined
+        base_intensity = 1.0
+        if current_viseme in proximity_map and next_viseme in proximity_map[current_viseme]:
+            base_intensity = proximity_map[current_viseme][next_viseme]
+
+        return base_intensity
+
     def process_visemes(self, segments):
         results = {}
-        possible_phonemes = {viseme: 0 for viseme in self.viseme_to_arpabet}
+        possible_phonemes = {viseme: 0.0 for viseme in self.viseme_to_ipa}
         precision = 4
         multiplier = 1000
         blend_offset = 100
@@ -107,12 +155,12 @@ class AudioSegmentsToVisemes:
                     frame = int((round(segment['start'] + (step * i), precision) * multiplier))
                     if frame not in results:
                         results[frame] = possible_phonemes.copy()
-                    results[frame][viseme] = 1
+                    results[frame][viseme] = 1.0
 
             else:
                 frame = int(round(round(segment['start'], precision) * multiplier))
                 results[frame] = possible_phonemes.copy()
-                results[frame]['sil'] = 1
+                results[frame]['sil'] = 1.0
 
         last_frame = max(results.keys())
         final = {}
@@ -135,25 +183,38 @@ class AudioSegmentsToVisemes:
                 for i in range(1, blend_offset + 1):
                     final[frame + i] = possible_phonemes.copy()
                     final[frame + i][current_viseme] = max(0.0, 1.0 - (i / blend_offset))
+
             else:
                 next_viseme, next_viseme_distance = self.get_next_viseme(results, frame)
                 if next_viseme_distance > 0:
                     step = 1 / next_viseme_distance
-                    for j in range(1, next_viseme_distance):
+                    target_intensity = self.adjust_next_viseme_intensity(current_viseme, next_viseme)
+                    for j in range(0, next_viseme_distance):
                         final[frame + j] = values.copy()
                         for viseme in possible_phonemes:
                             final[frame + j][viseme] = values[viseme] * (1.0 - step * j)
                         if current_viseme != 'sil':  # Ensure current viseme fades out, if different from previous
                             if current_viseme != next_viseme:
                                 final[frame + j][current_viseme] = 1.0 - step * j
-                                final[frame + j][next_viseme] = step * j
+                                final[frame + j][next_viseme] = step * j * target_intensity
+                                decrease_factors = self.get_factors(current_viseme)
+                                increase_factors = self.get_factors(next_viseme)
+                                for co_viseme, co_factor in decrease_factors:
+                                    final[frame + j][co_viseme] = max(final[frame + j][co_viseme],
+                                                                      (1.0 - step * j) * co_factor)
+                                for co_viseme, co_factor in increase_factors:
+                                    value = max(final[frame + j][co_viseme],
+                                                                      round((step * j) * co_factor * target_intensity,
+                                                                            3))
+                                    final[frame + j][co_viseme] = value
+
                             else:
+                                # No transitions: the same viseme is used continuously
                                 final[frame + j][current_viseme] = 1.0
-                                final[frame + j][next_viseme] = 1.0
-                        else:
-                            final[frame + j][next_viseme] = step * j
+                                increase_factors = self.get_factors(current_viseme)
+                                for co_viseme, co_factor in increase_factors:
+                                    final[frame + j][co_viseme] = max(final[frame + j][co_viseme], co_factor)
 
         scaled_final_list = [[int(value * 1000) for value in frame_data.values()] for frame_data in final.values()]
 
         return scaled_final_list
-
