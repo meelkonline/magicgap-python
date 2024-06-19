@@ -1,14 +1,11 @@
-import os
-
 import spacy
 import langid
 import pdfplumber
-import torch
 from docx import Document
-from fastapi import HTTPException
-from transformers import AutoTokenizer, AutoModelForSequenceClassification, pipeline
-
+from transformers import pipeline
+from sklearn.metrics.pairwise import cosine_similarity
 from api_requests import MultipleStringRequest
+from vector_functions import embed
 
 # Load the spaCy model
 nlp = spacy.load("en_core_web_sm")
@@ -41,64 +38,41 @@ def evaluate_sentiment(request: MultipleStringRequest):
     return result
 
 
-def extract_document_chunks(filepath, max_words):
-    if not os.path.exists(filepath):
-        raise HTTPException(status_code=404, detail="File not found.")
-
-    # Detecting file format based on file extension
-    file_extension = filepath.split('.')[-1].lower()
-    try:
-        if file_extension == 'pdf':
-            chunks = extract_text_from_pdf(filepath, max_words)
-        elif file_extension == 'docx':
-            chunks = extract_text_from_docx(filepath, max_words)
-        else:
-            raise HTTPException(status_code=400, detail="Unsupported file format.")
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error processing document: {str(e)}")
-
-    return {"chunks": chunks}
-
-
-def extract_text_from_pdf(filepath, max_words):
-    with pdfplumber.open(filepath) as pdf:
-        text_chunks = []
-        current_chunk = []
-        current_word_count = 0
-        for page in pdf.pages:
-            text = page.extract_text() or ""
-            for word in text.split():
-                if current_word_count < max_words:
-                    current_chunk.append(word)
-                    current_word_count += 1
-                else:
-                    text_chunks.append(" ".join(current_chunk))
-                    current_chunk = [word]
-                    current_word_count = 1
-        if current_chunk:
-            text_chunks.append(" ".join(current_chunk))
-    return text_chunks
-
-
-def extract_text_from_docx(filepath, max_words):
-    doc = Document(filepath)
-    text_chunks = []
-    current_chunk = []
-    current_word_count = 0
-    for paragraph in doc.paragraphs:
-        for word in paragraph.text.split():
-            if current_word_count < max_words:
-                current_chunk.append(word)
-                current_word_count += 1
-            else:
-                text_chunks.append(" ".join(current_chunk))
-                current_chunk = [word]
-                current_word_count = 1
-    if current_chunk:
-        text_chunks.append(" ".join(current_chunk))
-    return text_chunks
-
-
 def get_lang(text):
     lang, confidence = langid.classify(text)
     return lang
+
+# BELOW : Chunking for RAG functions
+
+
+def load_text(filepath):
+    """ Load text from a PDF or DOCX file. """
+    if filepath.endswith('.pdf'):
+        text = extract_text_from_pdf(filepath)
+    elif filepath.endswith('.docx'):
+        text = extract_text_from_docx(filepath)
+    else:
+        raise ValueError("Unsupported file type. Please use a .pdf or .docx file.")
+    return text
+
+
+def extract_text_from_pdf(filepath):
+    """ Extract text from a PDF file. """
+    text = ''
+    with pdfplumber.open(filepath) as pdf:
+        for page in pdf.pages:
+            text += page.extract_text() + ' '
+    return text
+
+
+def extract_text_from_docx(filepath):
+    """ Extract text from a DOCX file. """
+    doc = Document(filepath)
+    return ' '.join([paragraph.text for paragraph in doc.paragraphs])
+
+
+def extract_sentences(text):
+    """ Use spaCy to extract sentences from the provided text. """
+    doc = nlp(text)
+    return [sent.text.strip() for sent in doc.sents]
+

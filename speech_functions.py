@@ -13,11 +13,7 @@ from AudioSegmentsToVisemes import AudioSegmentsToVisemes
 from api_requests import MultipleStringRequest
 from nlp_functions import evaluate_sentiment
 
-# Path to ffmpeg executable
-#ffmpeg_path = 'C:\\ffmpeg\\bin\\ffmpeg.exe'  # Adjust if needed
-ffmpeg_path = 'ffmpeg'  # Adjust if needed
-# processor = AutoProcessor.from_pretrained("Bluecast/wav2vec2-Phoneme")
-# model = AutoModelForCTC.from_pretrained("Bluecast/wav2vec2-Phoneme")
+ffmpeg_path = 'ffmpeg'
 
 processor = AutoProcessor.from_pretrained("Bluecast/wav2vec2-Phoneme")
 model = AutoModelForCTC.from_pretrained("Bluecast/wav2vec2-Phoneme")
@@ -112,9 +108,6 @@ def phonemize_audio(audio_path):
     phonemes = process_segments(audio_segments)
     visemes_processor = AudioSegmentsToVisemes()
     visemes = visemes_processor.process_visemes(phonemes)
-
-    for v in visemes:
-        print(v)
 
     return [phonemes, visemes]
 

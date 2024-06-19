@@ -47,6 +47,6 @@ class CosineSimilarityRequest(BaseModel):
     string2: str
 
 
-class ExtractChunksRequest(BaseModel):
+class ExtractSemanticChunksRequest(BaseModel):
     filepath: str
-    max_words: int
+    threshold: float
