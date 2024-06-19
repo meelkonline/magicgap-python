@@ -9,8 +9,10 @@ from sentence_transformers import SentenceTransformer
 
 
 def embed(sentences):
+    if isinstance(sentences, str):
+        sentences = [sentences]
     model = SentenceTransformer('sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2')
-    embeddings = model.encode(sentences)
+    embeddings = model.encode(sentences, show_progress_bar=False)
     return embeddings
     # inputs = tokenizer(texts, return_tensors="pt", padding=True, truncation=True, max_length=128)
     # outputs = model(**inputs)
