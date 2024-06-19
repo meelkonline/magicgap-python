@@ -111,6 +111,3 @@ def test():
         print("Cluster:")
         for idx in cluster:
             print(idx)
-
-
-test()
