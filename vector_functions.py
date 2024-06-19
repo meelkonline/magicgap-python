@@ -1,4 +1,3 @@
-from transformers import AutoModel, AutoTokenizer
 import numpy as np
 from api_requests import CosineSimilarityRequest
 from sentence_transformers import SentenceTransformer
