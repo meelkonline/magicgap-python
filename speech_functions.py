@@ -1,17 +1,11 @@
 # Load model directly
-import os
 import subprocess
 import re
 import librosa
 import torch
-from dotenv import load_dotenv
-from phonemizer import phonemize
-from phonemizer.backend.espeak.wrapper import EspeakWrapper
-from transformers import AutoProcessor, AutoModelForCTC, AutoModelForAudioClassification
-from collections import defaultdict
+from transformers import AutoProcessor, AutoModelForCTC
 from AudioSegmentsToVisemes import AudioSegmentsToVisemes
-from api_requests import MultipleStringRequest
-from nlp_functions import evaluate_sentiment
+
 
 ffmpeg_path = 'ffmpeg'
 
