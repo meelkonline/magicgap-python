@@ -10,6 +10,11 @@ class MultipleStringRequest(BaseModel):
     strings: List[str]
 
 
+class SentimentRequest(BaseModel):
+    lang: str
+    strings: List[str]
+
+
 class UpsertRequest(BaseModel):
     index_name: str
     id: str

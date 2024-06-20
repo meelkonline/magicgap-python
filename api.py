@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from api_requests import UpsertRequest, SingleStringRequest, SearchRequest, UpdateRequest, DeleteRequest, \
-    CosineSimilarityRequest, ListRequest, MultipleStringRequest, ExtractSemanticChunksRequest
+    CosineSimilarityRequest, ListRequest, MultipleStringRequest, ExtractSemanticChunksRequest, SentimentRequest
 from pinecone_functions import pinecone_upsert, pinecone_search, pinecone_update, pinecone_delete, pinecone_list
 from nlp_functions import spatie_extract_phrases, get_lang, \
     evaluate_sentiment, load_text, extract_sentences
@@ -75,7 +75,6 @@ def lang(request: SingleStringRequest):
     return get_lang(request.string)
 
 
-#
 @app.post("/api/simple_cosine_similarity")
 def simple_cosine_similarity(request: CosineSimilarityRequest):
     score = evaluate_cosine_similarity(request)
@@ -95,7 +94,7 @@ def phonemize(request: SingleStringRequest):
 
 
 @app.post("/api/sentiment")
-def sentiment(request: MultipleStringRequest):
+def sentiment(request: SentimentRequest):
     return evaluate_sentiment(request)
 
 

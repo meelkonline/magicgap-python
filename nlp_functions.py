@@ -4,11 +4,13 @@ import pdfplumber
 from docx import Document
 from transformers import pipeline
 from sklearn.metrics.pairwise import cosine_similarity
-from api_requests import MultipleStringRequest
+from api_requests import MultipleStringRequest, SentimentRequest
 from vector_functions import embed
 
 # Load the spaCy model
 nlp = spacy.load("en_core_web_sm")
+english_emotion_classifier = pipeline("sentiment-analysis", model="michellejieli/emotion_text_classifier", top_k=2)
+french_emotion_classifier = pipeline("text-classification", model="ac0hik/emotions_detection_french", top_k=2)
 
 
 def spatie_extract_phrases(text):
@@ -31,9 +33,11 @@ def spatie_extract_phrases(text):
     return ' '.join(nouns_verbs)
 
 
-def evaluate_sentiment(request: MultipleStringRequest):
-    classifier = pipeline("sentiment-analysis", model="michellejieli/emotion_text_classifier", top_k=2)
-    result = classifier(request.strings)
+def evaluate_sentiment(request: SentimentRequest):
+    if request.lang == 'fr':
+        result = french_emotion_classifier(request.strings)
+    else:
+        result = english_emotion_classifier(request.strings)
 
     return result
 
@@ -41,6 +45,7 @@ def evaluate_sentiment(request: MultipleStringRequest):
 def get_lang(text):
     lang, confidence = langid.classify(text)
     return lang
+
 
 # BELOW : Chunking for RAG functions
 
@@ -75,4 +80,3 @@ def extract_sentences(text):
     """ Use spaCy to extract sentences from the provided text. """
     doc = nlp(text)
     return [sent.text.strip() for sent in doc.sents]
-
