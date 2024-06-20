@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 from api_requests import UpsertRequest, SingleStringRequest, SearchRequest, UpdateRequest, DeleteRequest, \
-    CosineSimilarityRequest, ListRequest, MultipleStringRequest, ExtractSemanticChunksRequest, SentimentRequest
+    CosineSimilarityRequest, ListRequest, MultipleStringRequest, ExtractSemanticChunksRequest, SentimentRequest, \
+    PhonemizeAudioRequest
 from pinecone_functions import pinecone_upsert, pinecone_search, pinecone_update, pinecone_delete, pinecone_list
 from nlp_functions import spatie_extract_phrases, get_lang, \
     evaluate_sentiment, load_text, extract_sentences
@@ -89,8 +90,8 @@ def vectorize(request: SingleStringRequest):
 
 
 @app.post("/api/phonemize")
-def phonemize(request: SingleStringRequest):
-    return phonemize_audio(request.string)
+def phonemize(request: PhonemizeAudioRequest):
+    return phonemize_audio(request.lang, request.audiopath)
 
 
 @app.post("/api/sentiment")

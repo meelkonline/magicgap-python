@@ -4,7 +4,8 @@ from bibtexparser import splitter
 
 
 class AudioSegmentsToVisemes:
-    def __init__(self):
+    def __init__(self, lang):
+        self.lang = lang
         self.viseme_to_arpabet = {
             'sil': ['sil', '-', 'PAU', 'EPI', 'None'],
             'PP': ['P', 'B', 'M', 'BCL', 'PCL', 'EM', 'AE', 'AW', 'W'],
@@ -93,42 +94,84 @@ class AudioSegmentsToVisemes:
     def get_factors(self, viseme):
         # Mapping from visemes to their influencing visemes with factors
         coarticulation_rules = {
-            'sil': [],
-            'PP': [('FF', 0.25)],
-            'FF': [('PP', 0.25)],
-            'TH': [('SS', 0.25)],
-            'DD': [('nn', 0.33), ('SS', 0.25)],
-            'kk': [('nn', 0.33)],
-            'CH': [('SS', 0.33)],
-            'SS': [('DD', 0.33), ('CH', 0.33)],
-            'nn': [('kk', 0.33), ('DD', 0.25)],
-            'RR': [('aa', 0.25)],
-            'aa': [('RR', 0.25)],
-            'E': [('I', 0.20), ('aa', 0.20)],
-            'I': [('E', 0.20)],
-            'O': [('U', 0.20)],
-            'U': [('O', 0.20)]
+            'en': {
+                'sil': [],
+                'PP': [('FF', 0.25)],
+                'FF': [('PP', 0.25)],
+                'TH': [('SS', 0.25)],
+                'DD': [('nn', 0.33), ('SS', 0.25)],
+                'kk': [('nn', 0.33)],
+                'CH': [('SS', 0.33)],
+                'SS': [('DD', 0.33), ('CH', 0.33)],
+                'nn': [('kk', 0.33), ('DD', 0.25)],
+                'RR': [('aa', 0.25)],
+                'aa': [('RR', 0.25)],
+                'E': [('I', 0.20), ('aa', 0.20)],
+                'I': [('E', 0.20)],
+                'O': [('U', 0.20)],
+                'U': [('O', 0.20)]
+            },
+            'fr': {
+                'sil': [],
+                'PP': [('FF', 0.30)],  # Example adaptations for French
+                'FF': [('PP', 0.30)],
+                'TH': [('SS', 0.20)],
+                'DD': [('nn', 0.35), ('SS', 0.20)],
+                'kk': [('nn', 0.35)],
+                'CH': [('SS', 0.30)],
+                'SS': [('DD', 0.35), ('CH', 0.30)],
+                'nn': [('kk', 0.35), ('DD', 0.30)],
+                'RR': [('aa', 0.20)],
+                'aa': [('RR', 0.20)],
+                'E': [('I', 0.25), ('aa', 0.25)],
+                'I': [('E', 0.25)],
+                'O': [('U', 0.25)],
+                'U': [('O', 0.25)]
+            }
         }
-        return coarticulation_rules.get(viseme, [])
+
+        coarticulation_rule = coarticulation_rules[self.lang]
+
+        return coarticulation_rule.get(viseme, [])
 
     def adjust_next_viseme_intensity(self, current_viseme, next_viseme):
         # Define relationships or proximity between visemes
-        proximity_map = {
-            'PP': {'FF': 0.8, 'TH': 0.5, 'DD': 0.7},  # Example: 'PP' transitions smoothly to 'FF'
-            'FF': {'PP': 0.8, 'TH': 0.6},
-            'TH': {'FF': 0.6, 'DD': 0.5},
-            'DD': {'TH': 0.5, 'SS': 0.4, 'nn': 0.7},  # 'DD' and 'nn' share similar tongue placements
-            'kk': {'nn': 0.5, 'CH': 0.4},  # Velar sounds can lead into ch/sh sounds or nasal sounds
-            'CH': {'SS': 0.8, 'kk': 0.4},  # Post-alveolar affricates/fricatives are close to sibilants
-            'SS': {'DD': 0.4, 'CH': 0.8},  # Sibilants share articulation locations
-            'nn': {'DD': 0.7, 'kk': 0.5},  # Nasal and alveolar/velar sounds
-            'RR': {'aa': 0.5},  # Rhotics can influence open vowels
-            'aa': {'RR': 0.5, 'E': 0.3},  # Open vowels transitioning to rhotics or front vowels
-            'E': {'I': 0.6, 'aa': 0.3},  # Front vowels are close in articulation
-            'I': {'E': 0.6, 'O': 0.4},  # High front to mid-back vowel transition
-            'O': {'U': 0.7, 'I': 0.4},  # Rounded vowels transition smoothly
-            'U': {'O': 0.7}  # Close back vowels to mid-back vowels
+        proximity_maps = {
+            'en': {
+                'PP': {'FF': 0.8, 'TH': 0.5, 'DD': 0.7},  # Example: 'PP' transitions smoothly to 'FF'
+                'FF': {'PP': 0.8, 'TH': 0.6},
+                'TH': {'FF': 0.6, 'DD': 0.5},
+                'DD': {'TH': 0.5, 'SS': 0.4, 'nn': 0.7},  # 'DD' and 'nn' share similar tongue placements
+                'kk': {'nn': 0.5, 'CH': 0.4},  # Velar sounds can lead into ch/sh sounds or nasal sounds
+                'CH': {'SS': 0.8, 'kk': 0.4},  # Post-alveolar affricates/fricatives are close to sibilants
+                'SS': {'DD': 0.4, 'CH': 0.8},  # Sibilants share articulation locations
+                'nn': {'DD': 0.7, 'kk': 0.5},  # Nasal and alveolar/velar sounds
+                'RR': {'aa': 0.5},  # Rhotics can influence open vowels
+                'aa': {'RR': 0.5, 'E': 0.3},  # Open vowels transitioning to rhotics or front vowels
+                'E': {'I': 0.6, 'aa': 0.3},  # Front vowels are close in articulation
+                'I': {'E': 0.6, 'O': 0.4},  # High front to mid-back vowel transition
+                'O': {'U': 0.7, 'I': 0.4},  # Rounded vowels transition smoothly
+                'U': {'O': 0.7}  # Close back vowels to mid-back vowels
+            },
+            'fr': {
+                'PP': {'FF': 0.7, 'TH': 0.6, 'DD': 0.8},  # Example adaptations for French
+                'FF': {'PP': 0.7, 'TH': 0.5},
+                'TH': {'FF': 0.5, 'DD': 0.4},
+                'DD': {'TH': 0.4, 'SS': 0.3, 'nn': 0.8},  # 'DD' and 'nn' share similar tongue placements
+                'kk': {'nn': 0.6, 'CH': 0.5},  # Velar sounds can lead into ch/sh sounds or nasal sounds
+                'CH': {'SS': 0.7, 'kk': 0.5},  # Post-alveolar affricates/fricatives are close to sibilants
+                'SS': {'DD': 0.3, 'CH': 0.7},  # Sibilants share articulation locations
+                'nn': {'DD': 0.8, 'kk': 0.6},  # Nasal and alveolar/velar sounds
+                'RR': {'aa': 0.6},  # Rhotics can influence open vowels
+                'aa': {'RR': 0.6, 'E': 0.4},  # Open vowels transitioning to rhotics or front vowels
+                'E': {'I': 0.5, 'aa': 0.4},  # Front vowels are close in articulation
+                'I': {'E': 0.5, 'O': 0.3},  # High front to mid-back vowel transition
+                'O': {'U': 0.6, 'I': 0.3},  # Rounded vowels transition smoothly
+                'U': {'O': 0.6}  # Close back vowels to mid-back vowels
+            }
         }
+
+        proximity_map = proximity_maps[self.lang]
 
         # Default to full intensity if no specific proximity is defined
         base_intensity = 1.0

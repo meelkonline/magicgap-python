@@ -10,6 +10,11 @@ class MultipleStringRequest(BaseModel):
     strings: List[str]
 
 
+class PhonemizeAudioRequest(BaseModel):
+    lang: str
+    audiopath: str
+
+
 class SentimentRequest(BaseModel):
     lang: str
     strings: List[str]

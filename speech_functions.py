@@ -95,12 +95,12 @@ def process_segments(segments):
     return results
 
 
-def phonemize_audio(audio_path):
+def phonemize_audio(lang, audio_path):
 
     silences = detect_silences(audio_path)
     audio_segments = create_audio_segments(audio_path, silences)
     phonemes = process_segments(audio_segments)
-    visemes_processor = AudioSegmentsToVisemes()
+    visemes_processor = AudioSegmentsToVisemes(lang)
     visemes = visemes_processor.process_visemes(phonemes)
 
     return [phonemes, visemes]
