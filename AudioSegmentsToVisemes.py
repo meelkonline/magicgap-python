@@ -183,9 +183,9 @@ class AudioSegmentsToVisemes:
     def process_visemes(self, segments):
         results = {}
         possible_phonemes = {viseme: 0.0 for viseme in self.viseme_to_ipa}
-        precision = 4
-        multiplier = 1000
-        blend_offset = 100
+        precision = 3
+        multiplier = 100
+        blend_offset = 10
 
         for segment in segments:
             if segment['type'] == 'speech' and segment['data']:
