@@ -52,6 +52,9 @@ def semantic_chunks(request: ExtractSemanticChunksRequest):
     """ Extract, embed and cluster sentences based on cosine similarity. """
     text = load_text(request.filepath)
     sentences = extract_sentences(text)
+    for s in sentences:
+        print('-> ' + s)
+
     embeddings = embed(sentences)
 
     # Example of clustering based on cosine similarity threshold

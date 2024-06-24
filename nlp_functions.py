@@ -56,8 +56,19 @@ def load_text(filepath):
         text = extract_text_from_pdf(filepath)
     elif filepath.endswith('.docx'):
         text = extract_text_from_docx(filepath)
+    elif filepath.endswith('.txt'):
+        text = extract_text_from_txt(filepath)
     else:
         raise ValueError("Unsupported file type. Please use a .pdf or .docx file.")
+    return text
+
+
+def extract_text_from_txt(filepath):
+    """ Extract text from a TXT file. """
+    file = open(filepath, "r")
+    text = file.read()
+    file.close()
+
     return text
 
 
