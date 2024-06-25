@@ -3,9 +3,7 @@ import langid
 import pdfplumber
 from docx import Document
 from transformers import pipeline
-from sklearn.metrics.pairwise import cosine_similarity
 from api_requests import MultipleStringRequest, SentimentRequest
-from vector_functions import embed
 
 # Load the spaCy model
 nlp = spacy.load("en_core_web_sm")

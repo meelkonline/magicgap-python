@@ -57,6 +57,7 @@ def semantic_chunks(request: ExtractSemanticChunksRequest):
 
     embeddings = embed(sentences)
 
+    return "go"
     # Example of clustering based on cosine similarity threshold
     clusters = []
     for i in range(len(sentences)):
