@@ -20,6 +20,12 @@ class SentimentRequest(BaseModel):
     strings: List[str]
 
 
+class TranslateRequest(BaseModel):
+    src_lang: str
+    target_lang: str
+    strings: List[str]
+
+
 class UpsertRequest(BaseModel):
     index_name: str
     id: str

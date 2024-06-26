@@ -1,7 +1,8 @@
+import requests
 from transformers import pipeline
 from huggingface_hub import login
 
-# Authenticate with your Hugging Face API token
+
 login("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")
 
 messages = [

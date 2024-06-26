@@ -1,7 +1,9 @@
 from fastapi import FastAPI
+from transformers import pipeline
+
 from api_requests import UpsertRequest, SingleStringRequest, SearchRequest, UpdateRequest, DeleteRequest, \
     CosineSimilarityRequest, ListRequest, MultipleStringRequest, ExtractSemanticChunksRequest, SentimentRequest, \
-    PhonemizeAudioRequest
+    PhonemizeAudioRequest, TranslateRequest
 from pinecone_functions import pinecone_upsert, pinecone_search, pinecone_update, pinecone_delete, pinecone_list
 from nlp_functions import spatie_extract_phrases, get_lang, \
     evaluate_sentiment, load_text, extract_sentences
@@ -100,6 +102,22 @@ def phonemize(request: PhonemizeAudioRequest):
 @app.post("/api/sentiment")
 def sentiment(request: SentimentRequest):
     return evaluate_sentiment(request)
+
+
+@app.post("/api/translate")
+def translate(request: TranslateRequest):
+    output = ""
+    src_tg = request.src_lang + '-' + request.target_lang
+    match src_tg:
+        case 'fr-en':
+            pipe = pipeline("translation", model="Helsinki-NLP/opus-mt-fr-en")
+            output = pipe(request.strings)
+
+        case 'en-fr':
+            pipe = pipeline("translation", model="Helsinki-NLP/opus-mt-en-fr")
+            output = pipe(request.strings)
+
+    return output
 
 
 def test():
