@@ -4,17 +4,15 @@ req = ""
 
 messages = [
     {"role": "user", "content": """
-###
-User Question : Comment confirmer ma commande?
-###
+### Instruction:
+Comment confirmer ma commande?
+### Input :
 - You are Sophia, a real estate expert
 - The conversation takes place during a real estate training session, in France.
 - You answer questions from a learner.
 - You are named Sophia.
 - Current date and time: 2024-06-25 16:07:43. 
-###
 
-###
 Your Role: 
 - Respond accurately and relevantly to the user's questions about any technical or internal subjects.
 - Your answers should be concise, within 40 words or less.
@@ -22,8 +20,8 @@ Your Role:
 - use CAPITAL LETTERS to emphasize meaningful word in your answer.
 - use ... (three points) to indicate a pause in your answer, when relevant.
 
-Please find relevant chunks for this question
-###
+Relevant informations:
+
 CONDITIONS GENERALES DE VENTE AVENIR & TALENT
 <<<
 Par ailleurs, la facturation sera automatiquement déclenchée au jour de la commande. Par voie de conséquence, ils seront majorés du montant de la TVA au taux légal en vigueur au moment de la facturation. Cette facture sera établie en fin d’année et payable à réception. En sus des indemnités de retard, toute somme non payée dans un délai de 30 jours à compter de son exigibilité produira de plein droit le paiement d’une indemnité forfaitaire de 40 euros due au titre des frais de recouvrement.
@@ -58,8 +56,16 @@ Enfin, le Client devra cliquer sur la case « Je confirme ma commande ». Le Cli
 >>>"""},
 ]
 
-from transformers import pipeline
+import requests
 
-pipe = pipeline("text-generation", model="Nekochu/Llama-2-13B-fp16-french")
-output = pipe(messages)
+API_URL = "https://api-inference.huggingface.co/models/Nekochu/Llama-2-13B-fp16-french"
+headers = {"Authorization": "Bearer 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"}
+
+
+def query(payload):
+    response = requests.post(API_URL, headers=headers, json=payload)
+    return response.json()
+
+
+output = query(messages)
 print(output)

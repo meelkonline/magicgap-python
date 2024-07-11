@@ -1,6 +1,7 @@
 import re
 
 from bibtexparser import splitter
+from scipy.interpolate import interp1d
 
 
 class AudioSegmentsToVisemes:
@@ -113,7 +114,7 @@ class AudioSegmentsToVisemes:
             },
             'fr': {
                 'sil': [],
-                'PP': [('FF', 0.30)],  # Example adaptations for French
+                'PP': [('FF', 0.30)],
                 'FF': [('PP', 0.30)],
                 'TH': [('SS', 0.20)],
                 'DD': [('nn', 0.35), ('SS', 0.20)],
@@ -191,6 +192,8 @@ class AudioSegmentsToVisemes:
             if segment['type'] == 'speech' and segment['data']:
                 visemes = self.phonemes_to_visemes(segment['data'])
                 num = len(visemes)
+                if num == 0:
+                    continue
                 duration = segment['end'] - segment['start']
                 step = duration / num
 
@@ -247,8 +250,8 @@ class AudioSegmentsToVisemes:
                                                                       (1.0 - step * j) * co_factor)
                                 for co_viseme, co_factor in increase_factors:
                                     value = max(final[frame + j][co_viseme],
-                                                                      round((step * j) * co_factor * target_intensity,
-                                                                            3))
+                                                round((step * j) * co_factor * target_intensity,
+                                                      3))
                                     final[frame + j][co_viseme] = value
 
                             else:
@@ -261,3 +264,28 @@ class AudioSegmentsToVisemes:
         scaled_final_list = [[int(value * 1000) for value in frame_data.values()] for frame_data in final.values()]
 
         return scaled_final_list
+
+    def smooth_visemes(self, visemes, frame_rate=0.01):
+        times = [v['start'] for v in visemes] + [visemes[-1]['end']]
+        values = [v['viseme'] for v in visemes]
+
+        unique_visemes = list(set(values))
+        viseme_indices = {v: i for i, v in enumerate(unique_visemes)}
+
+        viseme_numeric = [viseme_indices[v] for v in values]
+        interpolator = interp1d(times, viseme_numeric, kind='linear')
+
+        smoothed_visemes = []
+        current_time = times[0]
+        end_time = times[-1]
+
+        while current_time <= end_time:
+            interpolated_value = interpolator(current_time)
+            closest_viseme = min(unique_visemes, key=lambda v: abs(viseme_indices[v] - interpolated_value))
+            smoothed_visemes.append({
+                'time': current_time,
+                'viseme': closest_viseme
+            })
+            current_time += frame_rate
+
+        return smoothed_visemes

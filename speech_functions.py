@@ -28,21 +28,26 @@ def detect_silences(audio_path, noise_level="-30dB", duration=0.2):
     return silences
 
 
-# Step 2: Create audio segments based on silences
+MIN_AUDIO_LENGTH = 320  # Example minimum length in samples, adjust based on model requirements
+
+
 def create_audio_segments(audio_path, silences):
     segments = []
     last_end = 0.0
 
     audio, sample_rate = librosa.load(audio_path, sr=16000)
+
     for silence in silences:
         if last_end < silence['start']:
-            segment = {
-                'start': last_end,
-                'end': silence['start'],
-                'type': 'speech',
-                'data': audio[int(last_end * sample_rate):int(silence['start'] * sample_rate)]
-            }
-            segments.append(segment)
+            segment_data = audio[int(last_end * sample_rate):int(silence['start'] * sample_rate)]
+            if len(segment_data) >= MIN_AUDIO_LENGTH:
+                segment = {
+                    'start': last_end,
+                    'end': silence['start'],
+                    'type': 'speech',
+                    'data': segment_data
+                }
+                segments.append(segment)
 
         segments.append({
             'start': silence['start'],
@@ -54,21 +59,22 @@ def create_audio_segments(audio_path, silences):
 
     duration = librosa.get_duration(y=audio, sr=sample_rate)
     if last_end < duration:
-        segment = {
-            'start': last_end,
-            'end': duration,
-            'type': 'speech',
-            'data': audio[int(last_end * sample_rate):int(duration * sample_rate)]
-        }
-        segments.append(segment)
+        segment_data = audio[int(last_end * sample_rate):int(duration * sample_rate)]
+        if len(segment_data) >= MIN_AUDIO_LENGTH:
+            segment = {
+                'start': last_end,
+                'end': duration,
+                'type': 'speech',
+                'data': segment_data
+            }
+            segments.append(segment)
 
     return segments
 
 
-# Step 3: Process each speech segment with the model
 def process_segments(segments):
     results = []
-    min_length = 160  # Minimum length to ensure the segment is long enough (0.01 seconds at 16000 Hz)
+    min_length = 320  # Minimum length to ensure the segment is long enough (0.01 seconds at 16000 Hz)
     char_index = 0
     for segment in segments:
         if segment['type'] == 'speech' and len(segment['data']) >= min_length:
@@ -96,12 +102,12 @@ def process_segments(segments):
 
 
 def phonemize_audio(lang, audio_path):
-
     silences = detect_silences(audio_path)
     audio_segments = create_audio_segments(audio_path, silences)
     phonemes = process_segments(audio_segments)
     visemes_processor = AudioSegmentsToVisemes(lang)
     visemes = visemes_processor.process_visemes(phonemes)
 
-    return [phonemes, visemes]
+    # smoothed_visemes = visemes_processor.smooth_visemes(visemes)
 
+    return [phonemes, visemes]
