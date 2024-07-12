@@ -120,15 +120,3 @@ def translate(request: TranslateRequest):
     return output
 
 
-def test():
-    # Create a request object with the file path and a cosine similarity threshold
-    request = ExtractSemanticChunksRequest(filepath='ww2.pdf', threshold=0.5)
-    clusters = semantic_chunks(request)
-
-    # Print the clustered sentences
-    text = load_text(request.filepath)
-    sentences = extract_sentences(text)
-    for cluster in clusters:
-        print("Cluster:")
-        for idx in cluster:
-            print(idx)
