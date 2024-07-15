@@ -89,7 +89,6 @@ def simple_cosine_similarity(request: CosineSimilarityRequest):
 
 @app.post("/api/vectorize")
 def vectorize(request: SingleStringRequest):
-    logging.log(0, 'vectorize')
     embeddings = embed(request.string)
     embeddings_list = embeddings.tolist()
     return embeddings_list
