@@ -3,7 +3,7 @@ import langid
 import pdfplumber
 from docx import Document
 from transformers import pipeline
-from api_requests import MultipleStringRequest, SentimentRequest
+from api_requests import SentimentRequest
 
 # Load the spaCy model
 nlp = spacy.load("en_core_web_sm")

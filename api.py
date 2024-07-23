@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from transformers import pipeline
 
 from api_requests import UpsertRequest, SingleStringRequest, SearchRequest, UpdateRequest, DeleteRequest, \
-    CosineSimilarityRequest, ListRequest, MultipleStringRequest, ExtractSemanticChunksRequest, SentimentRequest, \
+    CosineSimilarityRequest, ListRequest, ExtractSemanticChunksRequest, SentimentRequest, \
     PhonemizeAudioRequest, TranslateRequest
 from pinecone_functions import pinecone_upsert, pinecone_search, pinecone_update, pinecone_delete, pinecone_list
 from nlp_functions import spatie_extract_phrases, get_lang, \
@@ -118,5 +118,3 @@ def translate(request: TranslateRequest):
             output = pipe(request.strings)
 
     return output
-
-
