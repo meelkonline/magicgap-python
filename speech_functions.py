@@ -74,7 +74,7 @@ def create_audio_segments(audio_path, silences):
 
 def process_segments(segments):
     results = []
-    min_length = 320  # Minimum length to ensure the segment is long enough (0.01 seconds at 16000 Hz)
+    min_length = 160  # Minimum length to ensure the segment is long enough (0.01 seconds at 16000 Hz)
     char_index = 0
     for segment in segments:
         if segment['type'] == 'speech' and len(segment['data']) >= min_length:
