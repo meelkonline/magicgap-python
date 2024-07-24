@@ -1,6 +1,6 @@
 import re
 
-from bibtexparser import splitter
+# from bibtexparser import splitter
 from scipy.interpolate import interp1d
 
 
