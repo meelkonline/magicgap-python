@@ -63,7 +63,7 @@ def load_text(filepath):
 
 def extract_text_from_txt(filepath):
     """ Extract text from a TXT file. """
-    file = open(filepath, "r")
+    file = open(filepath, "r", encoding="utf-8")
     text = file.read()
     file.close()
 
