@@ -6,7 +6,7 @@ from api_requests import UpsertRequest, SingleStringRequest, SearchRequest, Upda
     PhonemizeAudioRequest, TranslateRequest
 from pinecone_functions import pinecone_upsert, pinecone_search, pinecone_update, pinecone_delete, pinecone_list
 from nlp_functions import spatie_extract_phrases, get_lang, \
-    evaluate_sentiment, load_text, extract_sentences
+    evaluate_sentiment, load_text, extract_sentences, get_toxicity
 from speech_functions import phonemize_audio
 from vector_functions import evaluate_cosine_similarity, embed
 from sklearn.metrics.pairwise import cosine_similarity
@@ -102,6 +102,12 @@ def phonemize(request: PhonemizeAudioRequest):
 @app.post("/api/sentiment")
 def sentiment(request: SentimentRequest):
     return evaluate_sentiment(request)
+
+
+@app.post("/api/toxicity")
+def toxicity(request: SingleStringRequest):
+    result = get_toxicity(request.string)
+    return result  # Return the dictionary directly
 
 
 @app.post("/api/translate")

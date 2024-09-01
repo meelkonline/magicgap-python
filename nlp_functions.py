@@ -4,6 +4,7 @@ import pdfplumber
 from docx import Document
 from transformers import pipeline
 from api_requests import SentimentRequest
+from detoxify import Detoxify
 
 # Load the spaCy model
 nlp = spacy.load("en_core_web_sm")
@@ -38,6 +39,12 @@ def evaluate_sentiment(request: SentimentRequest):
         result = english_emotion_classifier(request.strings)
 
     return result
+
+
+def get_toxicity(text):
+    raw_results = Detoxify('multilingual').predict(text)
+    processed_results = {key: float(value) for key, value in raw_results.items()}
+    return processed_results
 
 
 def get_lang(text):
