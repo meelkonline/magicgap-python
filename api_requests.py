@@ -58,6 +58,11 @@ class SearchRequest(BaseModel):
     top_k: Optional[int] = 5
 
 
+class ChatRequest(BaseModel):
+    messages: List[dict]
+    options: Optional[dict] = {}
+
+
 class CosineSimilarityRequest(BaseModel):
     string1: str
     string2: str

@@ -3,7 +3,8 @@ from transformers import pipeline
 
 from api_requests import UpsertRequest, SingleStringRequest, SearchRequest, UpdateRequest, DeleteRequest, \
     CosineSimilarityRequest, ListRequest, ExtractSemanticChunksRequest, SentimentRequest, \
-    PhonemizeAudioRequest, TranslateRequest
+    PhonemizeAudioRequest, TranslateRequest, ChatRequest
+from llama_functions import llama_ask
 from pinecone_functions import pinecone_upsert, pinecone_search, pinecone_update, pinecone_delete, pinecone_list
 from nlp_functions import spatie_extract_phrases, get_lang, \
     evaluate_sentiment, load_text, extract_sentences, get_toxicity
@@ -108,6 +109,12 @@ def sentiment(request: SentimentRequest):
 def toxicity(request: SingleStringRequest):
     result = get_toxicity(request.string)
     return result  # Return the dictionary directly
+
+
+@app.post("/api/chat/ask")
+def chat_ask(request: ChatRequest):
+    result = llama_ask(request)
+    return result
 
 
 @app.post("/api/translate")
