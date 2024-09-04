@@ -1,4 +1,3 @@
-import huggingface
 from transformers import AutoModelForCausalLM, AutoTokenizer, pipeline
 from huggingface_hub import login
 
