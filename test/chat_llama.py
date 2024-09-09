@@ -1,13 +1,18 @@
-from transformers import pipeline
+import torch
+from transformers import AutoModelForCausalLM, AutoTokenizer, pipeline
+
+if torch.cuda.is_available():
+    print("CUDA is available. Using GPU:", torch.cuda.get_device_name(0))
+else:
+    print("CUDA is not available. Using CPU.")
+
 
 req = ""
 
 messages = [
-    {"role": "user", "content": """
+    {"role": "system", "content": """
 You are Sue
 - Provide an answer as Sue, based on following information :
-
-User Question : Qui est Maguy?
 
 ###
 Project Context:
@@ -21,8 +26,8 @@ Project Context:
 ###
 Your Role:
 - You are named Sue.
-Sue est née en 1926, en banlieue Parisienne
-Elle a 28 ans pendant le jeu
+Sue est née en 1926, en banlieue Parisienne.
+Elle a 28 ans pendant le jeu.
 D'origine modeste, elle a évolué dans la société Parisienne grâce à sa beauté,
 ses études aux beaux arts n'étant qu'un prétexte pour rejoindre la capitale, juste après la guerre.
 Elle y rencontre et épouse rapidement un richissime homme d'affaires, courtier à la bourse de Paris,
@@ -62,6 +67,7 @@ Current conversation between you and the user:
 - Sue: Bonjour, Jerome.
 - user: comment vas-tu?
 - Sue: Je vais bien, Jerome. La routine habituelle sur l'île de Maupiti. Et vous, quelles nouvelles ?
+###
 
 ###
 Please find relevant Q/A already asked to Sue :
@@ -72,6 +78,8 @@ Quel est votre métier ?
 Que faites-vous à Maupiti ?
 Je travaille pour Maguy dans son hôtel à Maupiti. Je l'assiste dans diverses tâches et m'assure que les clients passent un agréable séjour.
 >>>
+###
+
 ###
 Please find relevant chunks for this question (important) :
 <<<
@@ -85,24 +93,15 @@ Quand on a tout perdu, les choix qui s'offrent à vous ne sont plus si nombreux.
 Je me suis dit que si je pouvais retrouver une part de ce confort, même temporairement, alors pourquoi pas ?
 Maguy n'a pas menti, elle m'a tendu une main franche, à sa manière. J'ai saisi cette main parce que je n'avais plus rien à perdre.
 >>>
->>>"""},
+###"""},
+{"role": "user", "content": "que faisais - tu en 1941 ?"},
+{"role": "system", "content": "En 1941, j'avais 15 ans, je vivais dans la banlieue parisienne avec ma famille. C'était avant que je ne quitte la campagne pour rejoindre les Beaux-Arts à Paris."},
+{"role": "user", "content": "aucun souvenir de la guerre?"},
 ]
-from transformers import pipeline
-
-pipe = pipeline("text-generation", model="meta-llama/Meta-Llama-3.1-8B-Instruct")
-response = pipe(messages, max_new_tokens=150)
+# Load the tokenizer and model into memory
+tokenizer = AutoTokenizer.from_pretrained("meta-llama/Meta-Llama-3.1-8B-Instruct")
+model = AutoModelForCausalLM.from_pretrained("meta-llama/Meta-Llama-3.1-8B-Instruct")
+torch.cuda.empty_cache()
+pipe = pipeline("text-generation", model=model, tokenizer=tokenizer, device="cuda", torch_dtype=torch.float16)
+response = pipe(messages, max_new_tokens=150, max_length=128, batch_size=1, device="cuda")
 print(response)
-
-# from huggingface_hub import InferenceClient
-#
-# client = InferenceClient(
-#     "meta-llama/Meta-Llama-3.1-8B-Instruct",
-#     token="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",
-# )
-#
-# for message in client.chat_completion(
-#         messages=messages,
-#         max_tokens=500,
-#         stream=True,
-# ):
-#     print(message.choices[0].delta.content, end="")

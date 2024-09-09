@@ -52,9 +52,6 @@ def get_lang(text):
     return lang
 
 
-# BELOW : Chunking for RAG functions
-
-
 def load_text(filepath):
     """ Load text from a PDF or DOCX file. """
     if filepath.endswith('.pdf'):

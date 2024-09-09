@@ -64,6 +64,6 @@ def generate_sql_query(question, table_statements, instructions=""):
 instructions = "Use sessions, classrooms, addresses tables"
 user_question = "Which classrooms are situated in zip code 06110"
 
-sql = extract_text_from_txt('../sql_pedago_meelk.txt')
-sql_query = generate_sql_query(user_question,  sql, instructions)
-print(sql_query)
+# sql = extract_text_from_txt('')
+# sql_query = generate_sql_query(user_question,  sql, instructions)
+# print(sql_query)

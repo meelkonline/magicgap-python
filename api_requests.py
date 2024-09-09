@@ -64,8 +64,8 @@ class ChatRequest(BaseModel):
 
 
 class CosineSimilarityRequest(BaseModel):
-    string1: str
-    string2: str
+    target: str
+    messages: List[str]
 
 
 class ExtractSemanticChunksRequest(BaseModel):
