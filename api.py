@@ -65,7 +65,11 @@ def semantic_chunks(request: ExtractSemanticChunksRequest):
     for i in range(len(sentences)):
         found_cluster = False
         for cluster in clusters:
-            if max(cosine_similarity([embeddings[i]], [embeddings[idx] for idx in cluster]))[0] > request.threshold:
+            # if max(cosine_similarity([embeddings[i]], [embeddings[idx] for idx in cluster]))[0] > request.threshold:
+            if max(cosine_similarity(
+                    [embeddings[i].cpu().numpy()],
+                    [embeddings[idx].cpu().numpy() for idx in cluster]
+            ))[0] > request.threshold:
                 cluster.append(i)
                 found_cluster = True
                 break
