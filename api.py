@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from transformers import pipeline
 
 from api_requests import UpsertRequest, SingleStringRequest, SearchRequest, UpdateRequest, DeleteRequest, \
-    CosineSimilarityRequest, ListRequest, ExtractSemanticChunksRequest, SentimentRequest, \
+    CosineSimilarityRequest, ListRequest, SentimentRequest, \
     PhonemizeAudioRequest, TranslateRequest, ChatRequest, ChunkDocumentRequest, ChunkContentRequest
 from llama_functions import llama_ask
 from pinecone_functions import pinecone_upsert, pinecone_search, pinecone_update, pinecone_delete, pinecone_list
