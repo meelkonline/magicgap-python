@@ -3,6 +3,7 @@ import torch
 import re
 from api_requests import CosineSimilarityRequest
 from sentence_transformers import SentenceTransformer, util
+from sklearn.metrics.pairwise import cosine_similarity
 
 model = None
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -52,25 +53,25 @@ def embed(sentences):
     return embeddings
 
 
-def old_evaluate_cosine_similarity(request: CosineSimilarityRequest):
-    try:
-        v1 = embed(request.string1)[0]  # Assuming embed returns a list of embeddings
-        v2 = embed(request.string2)[0]
+def semantic_chunks(sentences, threshold):
+    """ Extract, embed and cluster sentences based on cosine similarity. """
+    embeddings = embed(sentences)
+    # Example of clustering based on cosine similarity threshold
+    clusters = []
+    for i in range(len(sentences)):
+        found_cluster = False
+        for cluster in clusters:
+            # if max(cosine_similarity([embeddings[i]], [embeddings[idx] for idx in cluster]))[0] > request.threshold:
+            if max(cosine_similarity(
+                    [embeddings[i].cpu().numpy()],
+                    [embeddings[idx].cpu().numpy() for idx in cluster]
+            ))[0] > threshold:
+                cluster.append(i)
+                found_cluster = True
+                break
+        if not found_cluster:
+            clusters.append([i])
 
-        if torch.cuda.is_available():
-            # Ensure tensors are moved to CPU before using them with numpy
-            norm_v1 = np.linalg.norm(v1.cpu().numpy())  # Move tensor to CPU and convert to NumPy array
-            norm_v2 = np.linalg.norm(v2.cpu().numpy())  # Move tensor to CPU and convert to NumPy array
-
-            cosine_similarity = np.dot(v1.cpu().numpy(), v2.cpu().numpy()) / (norm_v1 * norm_v2)
-        else:
-            norm_v1 = np.linalg.norm(v1)
-            norm_v2 = np.linalg.norm(v2)
-            if norm_v1 == 0 or norm_v2 == 0:
-                raise ValueError("One of the vectors is a zero vector, cannot compute cosine similarity.")
-            cosine_similarity = np.dot(v1, v2) / (norm_v1 * norm_v2)
-
-        return cosine_similarity
-
-    except Exception as e:
-        raise
+    # Extracting the clustered sentences
+    clustered_sentences = [[' '.join(sentences[idx] for idx in cluster)] for cluster in clusters]
+    return clustered_sentences

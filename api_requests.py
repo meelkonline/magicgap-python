@@ -68,6 +68,11 @@ class CosineSimilarityRequest(BaseModel):
     messages: List[str]
 
 
-class ExtractSemanticChunksRequest(BaseModel):
+class ChunkDocumentRequest(BaseModel):
     filepath: str
+    threshold: float
+
+
+class ChunkContentRequest(BaseModel):
+    text: str
     threshold: float
