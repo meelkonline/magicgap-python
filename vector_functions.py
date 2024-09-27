@@ -21,7 +21,7 @@ def get_model():
     global model
     if model is None:
         print("Loading multilingual model...")
-        model = SentenceTransformer('sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2', device=device)
+        model = SentenceTransformer('sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2', device=None)
     return model
 
 

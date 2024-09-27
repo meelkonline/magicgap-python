@@ -1,16 +1,16 @@
 from fastapi import FastAPI
 from transformers import pipeline
 
-from api_requests import UpsertRequest, SingleStringRequest, SearchRequest, UpdateRequest, DeleteRequest, \
-    CosineSimilarityRequest, ListRequest, SentimentRequest, \
-    PhonemizeAudioRequest, TranslateRequest, ChatRequest, ChunkDocumentRequest, ChunkContentRequest
+from api_requests import UpsertRequest, SingleStringRequest, \
+    CosineSimilarityRequest, SentimentRequest, \
+    PhonemizeAudioRequest, TranslateRequest, ChatRequest, ChunkDocumentRequest, ChunkContentRequest, QueryRequest
+from faiss_functions import handle_faiss_upsert, handle_faiss_query
 from llama_functions import llama_ask
-from pinecone_functions import pinecone_upsert, pinecone_search, pinecone_update, pinecone_delete, pinecone_list
 from nlp_functions import spatie_extract_phrases, get_lang, \
     evaluate_sentiment, load_text, extract_sentences, get_toxicity
 from speech_functions import phonemize_audio
 from vector_functions import evaluate_cosine_similarity, embed, semantic_chunks
-from sklearn.metrics.pairwise import cosine_similarity
+
 import logging
 
 app = FastAPI()
@@ -18,31 +18,6 @@ app = FastAPI()
 # Configure logging
 logging.basicConfig(level=logging.INFO, filename='app.log', filemode='a',
                     format='%(name)s - %(levelname)s - %(message)s')
-
-
-@app.post("/api/upsert")
-def upsert(request: UpsertRequest):
-    return pinecone_upsert(request)
-
-
-@app.post("/api/update")
-def update(request: UpdateRequest):
-    return pinecone_update(request)
-
-
-@app.post("/api/delete")
-def delete(request: DeleteRequest):
-    return pinecone_delete(request)
-
-
-@app.post("/api/list")
-def vector_list(request: ListRequest):
-    return pinecone_list(request)
-
-
-@app.post("/api/search")
-def search(request: SearchRequest):
-    return pinecone_search(request)
 
 
 @app.get("/api/extract_entities")
@@ -117,3 +92,15 @@ def translate(request: TranslateRequest):
             output = pipe(request.strings)
 
     return output
+
+
+@app.post("/api/faiss/upsert")
+def faiss_upsert(request: UpsertRequest):
+    handle_faiss_upsert(request)
+    return {"message": "Vector upserted successfully"}
+
+
+@app.post("/api/faiss/query")
+def faiss_query(request: QueryRequest):
+    result = handle_faiss_query(request)
+    return result

@@ -92,6 +92,49 @@ class AudioSegmentsToVisemes:
                     return viseme, frame - current_frame
         return None, None
 
+    #   Adjust blend duration between visemes
+    def dynamic_blend_offset(self, current_viseme, next_viseme):
+        proximity_map = {
+            'en': {
+                'PP': {'FF': 0.9, 'TH': 0.6, 'DD': 0.7, 'kk': 0.5, 'CH': 0.5},
+                'FF': {'PP': 0.9, 'TH': 0.8, 'DD': 0.6, 'SS': 0.7},
+                'TH': {'FF': 0.8, 'DD': 0.7, 'SS': 0.9, 'CH': 0.6},
+                'DD': {'TH': 0.7, 'SS': 0.5, 'nn': 0.9, 'RR': 0.6, 'aa': 0.7},
+                'kk': {'nn': 0.8, 'CH': 0.7, 'DD': 0.6, 'aa': 0.5},
+                'CH': {'SS': 0.8, 'kk': 0.7, 'DD': 0.6, 'TH': 0.6},
+                'SS': {'DD': 0.5, 'CH': 0.8, 'TH': 0.9, 'FF': 0.7},
+                'nn': {'DD': 0.9, 'kk': 0.8, 'RR': 0.5, 'aa': 0.6},
+                'RR': {'aa': 0.8, 'E': 0.5, 'I': 0.6},
+                'aa': {'RR': 0.8, 'I': 0.6, 'O': 0.7, 'E': 0.6},
+                'E': {'I': 0.7, 'aa': 0.6, 'O': 0.5, 'U': 0.4},
+                'I': {'E': 0.7, 'aa': 0.6, 'U': 0.5, 'O': 0.4},
+                'O': {'U': 0.8, 'I': 0.5, 'aa': 0.7},
+                'U': {'O': 0.8, 'I': 0.5, 'aa': 0.6}
+            },
+            'fr': {
+                'PP': {'FF': 0.8, 'TH': 0.7, 'DD': 0.8, 'kk': 0.6, 'CH': 0.6},
+                'FF': {'PP': 0.8, 'TH': 0.6, 'DD': 0.7, 'SS': 0.8},
+                'TH': {'FF': 0.7, 'DD': 0.6, 'SS': 0.9, 'CH': 0.7},
+                'DD': {'TH': 0.6, 'SS': 0.6, 'nn': 0.9, 'RR': 0.7, 'aa': 0.8},
+                'kk': {'nn': 0.7, 'CH': 0.7, 'DD': 0.7, 'aa': 0.6},
+                'CH': {'SS': 0.8, 'kk': 0.7, 'DD': 0.7, 'TH': 0.7},
+                'SS': {'DD': 0.6, 'CH': 0.8, 'TH': 0.9, 'FF': 0.8},
+                'nn': {'DD': 0.9, 'kk': 0.7, 'RR': 0.6, 'aa': 0.7},
+                'RR': {'aa': 0.7, 'E': 0.6, 'I': 0.7},
+                'aa': {'RR': 0.7, 'I': 0.7, 'O': 0.8, 'E': 0.6},
+                'E': {'I': 0.8, 'aa': 0.7, 'O': 0.6, 'U': 0.5},
+                'I': {'E': 0.8, 'aa': 0.7, 'U': 0.6, 'O': 0.5},
+                'O': {'U': 0.9, 'I': 0.6, 'aa': 0.8},
+                'U': {'O': 0.9, 'I': 0.6, 'aa': 0.7}
+            }
+        }
+
+        base_intensity = 1.0
+        if current_viseme in proximity_map[self.lang] and next_viseme in proximity_map[self.lang][current_viseme]:
+            base_intensity = proximity_map[self.lang][current_viseme][next_viseme]
+
+        return int(10 * base_intensity)
+
     def get_factors(self, viseme):
         # Mapping from visemes to their influencing visemes with factors
         coarticulation_rules = {
@@ -186,7 +229,6 @@ class AudioSegmentsToVisemes:
         possible_phonemes = {viseme: 0.0 for viseme in self.viseme_to_ipa}
         precision = 3
         multiplier = 100
-        blend_offset = 10
 
         for segment in segments:
             if segment['type'] == 'speech' and segment['data']:
@@ -214,7 +256,11 @@ class AudioSegmentsToVisemes:
         for frame in sorted(results.keys()):
             values = results[frame]
             current_viseme = next((viseme for viseme, presence in values.items() if presence == 1), 'sil')
+            # Use the existing get_next_viseme method to find the next viseme and its frame distance
+            next_viseme, _ = self.get_next_viseme(results, frame)
 
+            # Calculate blend offset based on the current and next visemes
+            blend_offset = self.dynamic_blend_offset(current_viseme, next_viseme)
             # Warm up frames: Start first lip movement
             if frame == 0:
                 for i in range(blend_offset, 0, -1):
@@ -251,7 +297,7 @@ class AudioSegmentsToVisemes:
                                 for co_viseme, co_factor in increase_factors:
                                     value = max(final[frame + j][co_viseme],
                                                 round((step * j) * co_factor * target_intensity,
-                                                      3))
+                                                      precision))
                                     final[frame + j][co_viseme] = value
 
                             else:
