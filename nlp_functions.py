@@ -8,8 +8,8 @@ from detoxify import Detoxify
 
 # Load the spaCy model
 nlp = spacy.load("en_core_web_sm")
-english_emotion_classifier = pipeline("sentiment-analysis", model="michellejieli/emotion_text_classifier", top_k=2)
-french_emotion_classifier = pipeline("text-classification", model="ac0hik/emotions_detection_french", top_k=2)
+english_emotion_classifier = pipeline("sentiment-analysis", model="michellejieli/emotion_text_classifier", top_k=1)
+french_emotion_classifier = pipeline("text-classification", model="ac0hik/emotions_detection_french", top_k=1)
 
 
 def spatie_extract_phrases(text):

@@ -15,6 +15,18 @@ class PhonemizeAudioRequest(BaseModel):
     audiopath: str
 
 
+class PhonemizeSegmentRequest(BaseModel):
+    string: str
+    lang: str
+
+
+class PhonemizeStreamRequest(BaseModel):
+    lang: str
+    characters: List[str]
+    start_times: List[float]
+    end_times: List[float]
+
+
 class SentimentRequest(BaseModel):
     lang: str
     strings: List[str]

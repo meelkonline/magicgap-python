@@ -1,23 +1,21 @@
 from fastapi import FastAPI
 from transformers import pipeline
-
 from api_requests import UpsertRequest, SingleStringRequest, \
     CosineSimilarityRequest, SentimentRequest, \
-    PhonemizeAudioRequest, TranslateRequest, ChatRequest, ChunkDocumentRequest, ChunkContentRequest, QueryRequest
+    TranslateRequest, ChatRequest, ChunkDocumentRequest, ChunkContentRequest, QueryRequest
+
 from faiss_functions import handle_faiss_upsert, handle_faiss_query
 from llama_functions import llama_ask
 from nlp_functions import spatie_extract_phrases, get_lang, \
     evaluate_sentiment, load_text, extract_sentences, get_toxicity
-from speech_functions import phonemize_audio
 from vector_functions import evaluate_cosine_similarity, embed, semantic_chunks
-
 import logging
 
 app = FastAPI()
 
 # Configure logging
-logging.basicConfig(level=logging.INFO, filename='app.log', filemode='a',
-                    format='%(name)s - %(levelname)s - %(message)s')
+logging.basicConfig(level=logging.INFO, filename='app.log', filemode='a', format='%(name)s - %(levelname)s - %('
+                                                                                 'message)s')
 
 
 @app.get("/api/extract_entities")
@@ -54,11 +52,6 @@ def vectorize(request: SingleStringRequest):
     embeddings = embed(request.string)
     embeddings_list = embeddings.tolist()
     return embeddings_list
-
-
-@app.post("/api/phonemize")
-def phonemize(request: PhonemizeAudioRequest):
-    return phonemize_audio(request.lang, request.audiopath)
 
 
 @app.post("/api/sentiment")
