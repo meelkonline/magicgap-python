@@ -49,7 +49,7 @@ class QueryRequest(BaseModel):
 
 
 class ChatRequest(BaseModel):
-    messages: List[dict]
+    messages: str
     options: Optional[dict] = {}
 
 

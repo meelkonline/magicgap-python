@@ -5,7 +5,7 @@ from api_requests import UpsertRequest, SingleStringRequest, \
     TranslateRequest, ChatRequest, ChunkDocumentRequest, ChunkContentRequest, QueryRequest
 
 from faiss_functions import handle_faiss_upsert, handle_faiss_query
-from llama_functions import llama_ask
+from llama_functions import llama32_3b_ask
 from nlp_functions import spatie_extract_phrases, get_lang, \
     evaluate_sentiment, load_text, extract_sentences, get_toxicity
 from vector_functions import evaluate_cosine_similarity, embed, semantic_chunks
@@ -67,7 +67,7 @@ def toxicity(request: SingleStringRequest):
 
 @app.post("/api/chat/ask")
 def chat_ask(request: ChatRequest):
-    result = llama_ask(request)
+    result = llama32_3b_ask(request)
     return result
 
 

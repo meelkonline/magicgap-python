@@ -1,5 +1,7 @@
 import torch
-from transformers import AutoModelForCausalLM, AutoTokenizer, pipeline
+from transformers import AutoModelForCausalLM, AutoTokenizer, pipeline, BitsAndBytesConfig
+
+quant_config = BitsAndBytesConfig(load_in_8bit=True)
 
 if torch.cuda.is_available():
     print("CUDA is available. Using GPU:", torch.cuda.get_device_name(0))
@@ -100,8 +102,15 @@ Maguy n'a pas menti, elle m'a tendu une main franche, à sa manière. J'ai saisi
 ]
 # Load the tokenizer and model into memory
 tokenizer = AutoTokenizer.from_pretrained("meta-llama/Meta-Llama-3.1-8B-Instruct")
-model = AutoModelForCausalLM.from_pretrained("meta-llama/Meta-Llama-3.1-8B-Instruct")
+
+model = AutoModelForCausalLM.from_pretrained(
+    "meta-llama/Meta-Llama-3.1-8B-Instruct",
+    quantization_config=quant_config,
+    top_p=0.95,  # Keep diversity while not cutting off tokens too early
+    temperature=0.1,  # Balance between randomness and coherence
+    device_map="auto"
+)
 torch.cuda.empty_cache()
-pipe = pipeline("text-generation", model=model, tokenizer=tokenizer, device="cuda", torch_dtype=torch.float16)
-response = pipe(messages, max_new_tokens=150, max_length=128, batch_size=1, device="cuda")
+pipe = pipeline("text-generation", model=model, tokenizer=tokenizer, torch_dtype=torch.float16)
+response = pipe(messages, max_new_tokens=128, batch_size=1)
 print(response)
