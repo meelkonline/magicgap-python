@@ -5,8 +5,8 @@ from api_requests import CosineSimilarityRequest
 from sentence_transformers import SentenceTransformer, util
 from sklearn.metrics.pairwise import cosine_similarity
 
-model = None
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+model = SentenceTransformer('sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2', device=None)
 
 
 def preprocess_text(text):

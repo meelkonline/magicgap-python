@@ -37,14 +37,17 @@ def llama32_3b_ask(request: ChatRequest):
             input_ids=input_ids,
             max_new_tokens=128,
             num_beams=1,
+            temperature=0.7,
             top_k=1
         )
 
     # Decode the output
     output_text = tokenizer.decode(outputs[0], skip_special_tokens=True)
+    split_response = output_text.split('***')
+    # Retrieve the part after the '***'
+    if len(split_response) > 1:
+        desired_output = split_response[1].strip()
+    else:
+        desired_output = "No valid answer found after '***'"
 
-    # Extract the assistant's response from the output
-    # Since the model continues the prompt, we need to extract the new part
-    generated_text = output_text[len(request.messages) - 1:].strip()
-    print(generated_text)
-    return generated_text
+    return desired_output
