@@ -38,8 +38,6 @@ def evaluate_cosine_similarity(request: CosineSimilarityRequest):
     # Find the message with the highest similarity
     max_similarity, idx = torch.max(similarities, dim=1)
 
-    print(f"Found : '{request.messages[idx.item()]}'")
-
     return max_similarity.item()
 
 
