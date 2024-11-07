@@ -4,9 +4,11 @@ import re
 from api_requests import CosineSimilarityRequest
 from sentence_transformers import SentenceTransformer, util
 from sklearn.metrics.pairwise import cosine_similarity
+from transformers import pipeline
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 model = SentenceTransformer('sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2', device=None)
+summarizer = pipeline("summarization", model="sshleifer/distilbart-cnn-12-6")
 
 
 def preprocess_text(text):
@@ -49,6 +51,12 @@ def embed(sentences):
     with torch.no_grad():
         embeddings = model.encode(sentences, convert_to_tensor=True, show_progress_bar=False)
     return embeddings
+
+
+def summarize_sentences(sentences,max_length):
+    combined_text = " ".join(sentences)
+    summary = summarizer(combined_text, max_length=max_length, min_length=5, do_sample=False)[0]["summary_text"]
+    return summary
 
 
 def semantic_chunks(sentences, threshold):

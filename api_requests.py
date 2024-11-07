@@ -58,6 +58,11 @@ class CosineSimilarityRequest(BaseModel):
     messages: List[str]
 
 
+class SummarizeRequest(BaseModel):
+    messages: List[str]
+    max_length: int
+
+
 class ChunkDocumentRequest(BaseModel):
     filepath: str
     threshold: float

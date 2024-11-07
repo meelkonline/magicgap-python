@@ -2,13 +2,13 @@ from fastapi import FastAPI
 from transformers import pipeline
 from api_requests import UpsertRequest, SingleStringRequest, \
     CosineSimilarityRequest, SentimentRequest, \
-    TranslateRequest, ChatRequest, ChunkDocumentRequest, ChunkContentRequest, QueryRequest
+    TranslateRequest, ChatRequest, ChunkDocumentRequest, ChunkContentRequest, QueryRequest, SummarizeRequest
 
 from faiss_functions import handle_faiss_upsert, handle_faiss_query
 from llama_functions import llama32_3b_ask
 from nlp_functions import spatie_extract_phrases, get_lang, \
     evaluate_sentiment, load_text, extract_sentences, get_toxicity
-from vector_functions import evaluate_cosine_similarity, embed, semantic_chunks
+from vector_functions import evaluate_cosine_similarity, embed, semantic_chunks, summarize_sentences
 import logging
 
 app = FastAPI()
@@ -28,6 +28,11 @@ def chunk_document(request: ChunkDocumentRequest):
     text = load_text(request.filepath)
     sentences = extract_sentences(text)
     return semantic_chunks(sentences, request.threshold)
+
+
+@app.post("/api/summarize")
+def summarize(request: SummarizeRequest):
+    return summarize_sentences(request.messages, request.max_length)
 
 
 @app.post("/api/chunk_content")
