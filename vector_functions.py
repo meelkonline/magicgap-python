@@ -7,9 +7,9 @@ from sklearn.metrics.pairwise import cosine_similarity
 from transformers import pipeline
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-model = SentenceTransformer('sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2', device=None)
-summarizer = pipeline("summarization", model="sshleifer/distilbart-cnn-12-6")
-
+# Load a smaller and faster model
+model_name = 'paraphrase-MiniLM-L6-v2'
+model = SentenceTransformer(model_name, device=device)
 
 def preprocess_text(text):
     # Normalize case and strip unnecessary spaces/punctuation
@@ -22,23 +22,28 @@ def preprocess_text(text):
 def get_model():
     global model
     if model is None:
-        print("Loading multilingual model...")
-        model = SentenceTransformer('sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2', device=None)
+        print("Loading model...")
+        model = SentenceTransformer(model_name, device=device)
     return model
 
 
 def evaluate_cosine_similarity(request: CosineSimilarityRequest):
     evaluation_model = get_model()  # Ensure the model is loaded
-    # Encode target answer and conversation into vectors
-    target_embedding = evaluation_model.encode(preprocess_text(request.target), convert_to_tensor=True)
-    conversation_embeddings = evaluation_model.encode([preprocess_text(msg) for msg in request.messages],
-                                                      convert_to_tensor=True)
 
-    # Compute cosine similarity between the target and each message in the conversation
-    similarities = util.pytorch_cos_sim(target_embedding, conversation_embeddings)
+    # Preprocess texts
+    target_text = preprocess_text(request.target)
+    messages_texts = [preprocess_text(msg) for msg in request.messages]
+
+    # Encode target and messages
+    with torch.no_grad():
+        target_embedding = evaluation_model.encode(target_text, convert_to_tensor=True, device=device)
+        conversation_embeddings = evaluation_model.encode(messages_texts, convert_to_tensor=True, device=device)
+
+    # Compute cosine similarity
+    similarities = util.cos_sim(target_embedding, conversation_embeddings)
 
     # Find the message with the highest similarity
-    max_similarity, idx = torch.max(similarities, dim=1)
+    max_similarity, _ = torch.max(similarities, dim=1)
 
     return max_similarity.item()
 
@@ -51,12 +56,6 @@ def embed(sentences):
     with torch.no_grad():
         embeddings = model.encode(sentences, convert_to_tensor=True, show_progress_bar=False)
     return embeddings
-
-
-def summarize_sentences(sentences,max_length):
-    combined_text = " ".join(sentences)
-    summary = summarizer(combined_text, max_length=max_length, min_length=5, do_sample=False)[0]["summary_text"]
-    return summary
 
 
 def semantic_chunks(sentences, threshold):

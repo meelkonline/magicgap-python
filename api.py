@@ -8,7 +8,8 @@ from faiss_functions import handle_faiss_upsert, handle_faiss_query
 from llama_functions import llama32_3b_ask
 from nlp_functions import spatie_extract_phrases, get_lang, \
     evaluate_sentiment, load_text, extract_sentences, get_toxicity
-from vector_functions import evaluate_cosine_similarity, embed, semantic_chunks, summarize_sentences
+from summarization import summarize_sentences
+from vector_functions import evaluate_cosine_similarity, embed, semantic_chunks
 import logging
 
 app = FastAPI()

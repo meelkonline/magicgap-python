@@ -47,7 +47,7 @@ def llama32_3b_ask(request: ChatRequest):
     input_ids = tokenizer(request.messages, return_tensors="pt").input_ids.cuda()
 
     # tokenizer.add_special_tokens({'additional_special_tokens': ['<|system|>', '<|user|>', '<|assistant|>']})
-    stopping_criteria = StoppingCriteriaList([MaxWordStoppingCriteria(max_words=25)])
+    stopping_criteria = StoppingCriteriaList([MaxWordStoppingCriteria(max_words=35)])
 
     # Generate the assistant's response
     with torch.no_grad():
@@ -55,7 +55,7 @@ def llama32_3b_ask(request: ChatRequest):
             input_ids=input_ids,
             max_new_tokens=256,  # Limit to shorter responses
             num_beams=1,
-            temperature=0.1,
+            temperature=0.3,
             top_k=1,
             stopping_criteria=stopping_criteria,
             eos_token_id=tokenizer.eos_token_id,
