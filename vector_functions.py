@@ -54,7 +54,7 @@ def embed(sentences):
         sentences = [sentences]
 
     with torch.no_grad():
-        embeddings = model.encode(sentences, convert_to_tensor=True, show_progress_bar=False)
+        embeddings = model.encode(sentences, convert_to_tensor=True, show_progress_bar=False, device=device)
     return embeddings
 
 
