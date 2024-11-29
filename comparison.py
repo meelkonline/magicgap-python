@@ -34,9 +34,9 @@ def compare(request: CompareRequest):
     for hypothesis_id, hypothesis, prediction in zip(ids, hypotheses, predictions):
         prediction_dict = {name: round(float(pred) * 100, 1) for pred, name in zip(prediction, label_names)}
         entailment_score = prediction_dict["entailment"]
-        # print(f"Premise: {request.premise}")
-        # print(f"Hypothesis: {hypothesis}")
-        # print(f"Prediction: {prediction_dict}\n")
+        print(f"Premise: {request.premise}")
+        print(f"Hypothesis: {hypothesis}")
+        print(f"Prediction: {prediction_dict}\n")
 
         if entailment_score >= request.min_score:
             return hypothesis_id  # Return the ID of the matching hypothesis
@@ -44,13 +44,19 @@ def compare(request: CompareRequest):
     # If no hypothesis meets the threshold, return 'none'
     return "none"
 
-# Example : Define the single premise and multiple hypotheses
-# premise = "Bruce. He told us he served in the Italian army in Africa during the war. That's all I know, Inspector."
-# hypotheses = {
-#     1: "Bruce served in the Italian army during the war.",
-#     2: "Bruce mentioned that he joined the military during World War II.",
-#     3: "Maupiti is a peaceful island without Italians.",
-# }
-#
-# req = CompareRequest(premise=premise, hypotheses=hypotheses, min_score=90)
-# compare(req)
+
+#Example : Define the single premise and multiple hypotheses
+
+premise = """Bruce and Roy, yes. They vanished around midnight, but they reappeared an hour later."""
+
+#premise = "Bruce and Roy, yes. They vanished around midnight, but they reappeared an hour later."
+hypotheses = [
+    [1, "Bruce and Roy disappeared at midnight on maguy's birthday."],
+    [2, "Bruce and Roy disappeared at midnight during maguy's party, and reappeared an hour later."],
+    [3, "Bruce mentioned that he joined the military during World War II."],
+    [4, "Maupiti is a peaceful island without Italians."],
+]
+
+req = CompareRequest(premise=premise, hypotheses=hypotheses, min_score=90)
+id = compare(req)
+print(id)

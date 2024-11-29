@@ -33,3 +33,14 @@ def summarize_conversation(sentences, max_length):
         )
     summary = tokenizer.decode(summary_ids[0], skip_special_tokens=True)
     return summary
+
+
+# sentences = ["when was maguy's birthday ?",
+#            "Maguy's birthday was last week, I think. We celebrated with champagne and cake on the boat.",
+#            "anything strange happened?",
+#            "I don't know what you're insinuating, Jerome. Maguy and I got along just fine.",
+#            "anybody disappeared ?",
+#            "Bruce and Roy, yes. They vanished around midnight, but they reappeared an hour later."]
+#
+# s = summarize_conversation(sentences, 50)
+# print(s)
