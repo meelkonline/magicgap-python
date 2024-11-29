@@ -1,6 +1,8 @@
 from pydantic import BaseModel
 from typing import List, Any, Optional
 
+from typing_extensions import Dict, Tuple
+
 
 class SingleStringRequest(BaseModel):
     string: str
@@ -61,6 +63,12 @@ class CosineSimilarityRequest(BaseModel):
 class SummarizeRequest(BaseModel):
     messages: List[str]
     max_length: int
+
+
+class CompareRequest(BaseModel):
+    premise: str
+    hypotheses: List[Tuple[int, str]]  # Allow duplicate IDs
+    min_score: int
 
 
 class ChunkDocumentRequest(BaseModel):

@@ -9,7 +9,7 @@ from transformers import pipeline
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 # Load a smaller and faster model
 model_name = 'paraphrase-MiniLM-L6-v2'
-model = SentenceTransformer(model_name, device=device)
+model = SentenceTransformer(model_name, device="cuda")
 
 def preprocess_text(text):
     # Normalize case and strip unnecessary spaces/punctuation
@@ -23,7 +23,7 @@ def get_model():
     global model
     if model is None:
         print("Loading model...")
-        model = SentenceTransformer(model_name, device=device)
+        model = SentenceTransformer(model_name, device="cuda")
     return model
 
 
@@ -36,12 +36,12 @@ def evaluate_cosine_similarity(request: CosineSimilarityRequest):
 
     # Encode target and messages
     with torch.no_grad():
-        target_embedding = evaluation_model.encode(target_text, convert_to_tensor=True, device=device)
-        conversation_embeddings = evaluation_model.encode(messages_texts, convert_to_tensor=True, device=device)
+        target_embedding = evaluation_model.encode(target_text, convert_to_tensor=True, device="cuda")
+        conversation_embeddings = evaluation_model.encode(messages_texts, convert_to_tensor=True, device="cuda")
 
     # Compute cosine similarity
     similarities = util.cos_sim(target_embedding, conversation_embeddings)
-
+    print(similarities)
     # Find the message with the highest similarity
     max_similarity, _ = torch.max(similarities, dim=1)
 
@@ -54,7 +54,7 @@ def embed(sentences):
         sentences = [sentences]
 
     with torch.no_grad():
-        embeddings = model.encode(sentences, convert_to_tensor=True, show_progress_bar=False, device=device)
+        embeddings = model.encode(sentences, convert_to_tensor=True, show_progress_bar=False, device="cuda")
     return embeddings
 
 

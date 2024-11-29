@@ -93,3 +93,11 @@ def extract_sentences(text):
     """ Use spaCy to extract sentences from the provided text. """
     doc = nlp(text)
     return [sent.text.strip() for sent in doc.sents]
+
+
+# Function to limit text to a specified number of sentences
+def limit_to_sentences(text, max_sentences=2):
+    doc = nlp(text)
+    sentences = list(doc.sents)  # Extract sentences using spaCy
+    limited_sentences = " ".join([str(sent) for sent in sentences[:max_sentences]])  # Join the first n sentences
+    return limited_sentences

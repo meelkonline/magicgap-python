@@ -2,13 +2,15 @@ from fastapi import FastAPI
 from transformers import pipeline
 from api_requests import UpsertRequest, SingleStringRequest, \
     CosineSimilarityRequest, SentimentRequest, \
-    TranslateRequest, ChatRequest, ChunkDocumentRequest, ChunkContentRequest, QueryRequest, SummarizeRequest
+    TranslateRequest, ChatRequest, ChunkDocumentRequest, ChunkContentRequest, QueryRequest, SummarizeRequest, \
+    CompareRequest
+from comparison import compare
 
 from faiss_functions import handle_faiss_upsert, handle_faiss_query
-from llama_functions import llama32_3b_ask
+from llama_functions import llama32_3b_ask, llama32_3b_quiz
 from nlp_functions import spatie_extract_phrases, get_lang, \
     evaluate_sentiment, load_text, extract_sentences, get_toxicity
-from summarization import summarize_sentences
+from summarization import summarize_conversation
 from vector_functions import evaluate_cosine_similarity, embed, semantic_chunks
 import logging
 
@@ -33,7 +35,7 @@ def chunk_document(request: ChunkDocumentRequest):
 
 @app.post("/api/summarize")
 def summarize(request: SummarizeRequest):
-    return summarize_sentences(request.messages, request.max_length)
+    return summarize_conversation(request.messages, request.max_length)
 
 
 @app.post("/api/chunk_content")
@@ -75,6 +77,17 @@ def toxicity(request: SingleStringRequest):
 def chat_ask(request: ChatRequest):
     result = llama32_3b_ask(request)
     return result
+
+
+@app.post("/api/quiz/answer")
+def quiz_answer(request: ChatRequest):
+    result = llama32_3b_quiz(request)
+    return result
+
+
+@app.post("/api/compare_premise")
+def compare_premise(request: CompareRequest):
+    return compare(request)
 
 
 @app.post("/api/translate")
