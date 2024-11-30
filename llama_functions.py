@@ -72,7 +72,7 @@ def llama32_3b_ask(request: ChatRequest):
     attention_mask = tokenizer_input.attention_mask.cuda()
 
     # tokenizer.add_special_tokens({'additional_special_tokens': ['<|system|>', '<|user|>', '<|assistant|>']})
-    stopping_criteria = StoppingCriteriaList([MaxWordStoppingCriteria(max_words=100)])
+    # stopping_criteria = StoppingCriteriaList([MaxWordStoppingCriteria(max_words=100)])
 
     # Generate the assistant's response
     with torch.no_grad():
