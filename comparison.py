@@ -46,17 +46,17 @@ def compare(request: CompareRequest):
 
 
 #Example : Define the single premise and multiple hypotheses
-
-premise = """Bruce and Roy, yes. They vanished around midnight, but they reappeared an hour later."""
-
-#premise = "Bruce and Roy, yes. They vanished around midnight, but they reappeared an hour later."
-hypotheses = [
-    [1, "Bruce and Roy disappeared at midnight on maguy's birthday."],
-    [2, "Bruce and Roy disappeared at midnight during maguy's party, and reappeared an hour later."],
-    [3, "Bruce mentioned that he joined the military during World War II."],
-    [4, "Maupiti is a peaceful island without Italians."],
-]
-
-req = CompareRequest(premise=premise, hypotheses=hypotheses, min_score=90)
-id = compare(req)
-print(id)
+#
+# premise = """Bruce and Roy, yes. They vanished around midnight, but they reappeared an hour later."""
+#
+# #premise = "Bruce and Roy, yes. They vanished around midnight, but they reappeared an hour later."
+# hypotheses = [
+#     [1, "Bruce and Roy disappeared at midnight on maguy's birthday."],
+#     [2, "Bruce and Roy disappeared at midnight during maguy's party, and reappeared an hour later."],
+#     [3, "Bruce mentioned that he joined the military during World War II."],
+#     [4, "Maupiti is a peaceful island without Italians."],
+# ]
+#
+# req = CompareRequest(premise=premise, hypotheses=hypotheses, min_score=90)
+# id = compare(req)
+# print(id)
