@@ -103,7 +103,7 @@ Maguy n'a pas menti, elle m'a tendu une main franche, à sa manière. J'ai saisi
 # Load the tokenizer and model into memory
 tokenizer = AutoTokenizer.from_pretrained("meta-llama/Meta-Llama-3.1-8B-Instruct")
 
-model = AutoModelForCausalLM.from_pretrained(
+llama_model = AutoModelForCausalLM.from_pretrained(
     "meta-llama/Meta-Llama-3.1-8B-Instruct",
     quantization_config=quant_config,
     top_p=0.95,  # Keep diversity while not cutting off tokens too early
@@ -111,6 +111,6 @@ model = AutoModelForCausalLM.from_pretrained(
     device_map="auto"
 )
 torch.cuda.empty_cache()
-pipe = pipeline("text-generation", model=model, tokenizer=tokenizer, torch_dtype=torch.float16)
+pipe = pipeline("text-generation", model=llama_model, tokenizer=tokenizer, torch_dtype=torch.float16)
 response = pipe(messages, max_new_tokens=128, batch_size=1)
 print(response)

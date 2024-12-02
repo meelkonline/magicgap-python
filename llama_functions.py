@@ -12,7 +12,7 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 login("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")
 
 # Load the tokenizer and model
-tokenizer = AutoTokenizer.from_pretrained("meta-llama/Llama-3.2-3B-Instruct")
+llama_tokenizer = AutoTokenizer.from_pretrained("meta-llama/Llama-3.2-3B-Instruct")
 
 quant_config = BitsAndBytesConfig(
     load_in_4bit=True,  # Use 4-bit quantization
@@ -21,18 +21,18 @@ quant_config = BitsAndBytesConfig(
     bnb_4bit_compute_dtype=torch.float16
 )
 
-model = AutoModelForCausalLM.from_pretrained(
+llama_model = AutoModelForCausalLM.from_pretrained(
     "meta-llama/Llama-3.2-3B-Instruct",
     quantization_config=quant_config
 )
 
 # Ensure the model is in evaluation mode
-model.eval()
+llama_model.eval()
 
 
 class StopAtFirstValidJSON(StoppingCriteria):
     def __init__(self, tokenizer):
-        self.tokenizer = tokenizer
+        self.tokenizer = llama_tokenizer
         self.buffer = ""
 
     def __call__(self, input_ids, scores, **kwargs):
@@ -56,7 +56,7 @@ class MaxWordStoppingCriteria(StoppingCriteria):
         self.current_words = 0
 
     def __call__(self, input_ids, scores, **kwargs):
-        decoded_text = tokenizer.decode(input_ids[0], skip_special_tokens=True)
+        decoded_text = llama_tokenizer.decode(input_ids[0], skip_special_tokens=True)
         self.current_words = len(decoded_text.split())
         if self.current_words >= self.max_words:
             # Check if the last token is a punctuation mark indicating end of sentence
@@ -67,24 +67,24 @@ class MaxWordStoppingCriteria(StoppingCriteria):
 
 def llama32_3b_ask(request: ChatRequest):
     # Tokenize the prompt
-    tokenizer_input = tokenizer(request.messages, return_tensors="pt")
+    tokenizer_input = llama_tokenizer(request.messages, return_tensors="pt")
     input_ids = tokenizer_input.input_ids.cuda()
     attention_mask = tokenizer_input.attention_mask.cuda()
-
-    # tokenizer.add_special_tokens({'additional_special_tokens': ['<|system|>', '<|user|>', '<|assistant|>']})
+    print(f"messages: {request.messages}")
+    # tokenizer_input.add_special_tokens({'additional_special_tokens': ['<|system|>', '<|user|>', '<|assistant|>']})
     # stopping_criteria = StoppingCriteriaList([MaxWordStoppingCriteria(max_words=100)])
 
     # Generate the assistant's response
     with torch.no_grad():
-        outputs = model.generate(
+        outputs = llama_model.generate(
             input_ids=input_ids,
             attention_mask=attention_mask,
             max_new_tokens=80,  # Approx. 50 words
-            num_beams=3,
+            num_beams=1,
             temperature=0.1,
-            top_k=5,
-            eos_token_id=tokenizer.eos_token_id,
-            pad_token_id=tokenizer.eos_token_id  # Prevents padding from being added
+            top_k=1,
+            eos_token_id=llama_tokenizer.eos_token_id,
+            pad_token_id=llama_tokenizer.eos_token_id  # Prevents padding from being added
         )
 
         # Extract only the generated part (new tokens)
@@ -92,24 +92,24 @@ def llama32_3b_ask(request: ChatRequest):
     generated_tokens = outputs[:, prompt_length:]  # Slice for all batches
 
     # Decode only the new part
-    new_text = tokenizer.batch_decode(generated_tokens, skip_special_tokens=True)
+    new_text = llama_tokenizer.batch_decode(generated_tokens, skip_special_tokens=True)
     new_text = [text.strip('"') for text in new_text]  # Clean up quotes
-
+    print(f"new_text: {new_text}")
     # Limit to 2 sentences
     return limit_to_sentences(new_text[0], 2)
 
 
 def llama32_3b_quiz(request: ChatRequest):
     # Tokenize the prompt
-    tokenizer_input = tokenizer(request.messages, return_tensors="pt")
+    tokenizer_input = llama_tokenizer(request.messages, return_tensors="pt")
     input_ids = tokenizer_input.input_ids.cuda()
     attention_mask = tokenizer_input.attention_mask.cuda()
 
-    stopping_criteria = StopAtFirstValidJSON(tokenizer)
+    stopping_criteria = StopAtFirstValidJSON(llama_tokenizer)
 
     # Generate the assistant's response
     with torch.no_grad():
-        outputs = model.generate(
+        outputs = llama_model.generate(
             input_ids=input_ids,
             attention_mask=attention_mask,
             max_new_tokens=1024,  # Limit to shorter responses
@@ -117,8 +117,8 @@ def llama32_3b_quiz(request: ChatRequest):
             temperature=0.6,
             top_k=5,
             stopping_criteria=StoppingCriteriaList([stopping_criteria]),
-            eos_token_id=tokenizer.eos_token_id,
-            pad_token_id=tokenizer.eos_token_id  # Prevents padding from being added
+            eos_token_id=llama_tokenizer.eos_token_id,
+            pad_token_id=llama_tokenizer.eos_token_id  # Prevents padding from being added
         )
 
     # Extract only the generated part (new tokens)
@@ -126,7 +126,7 @@ def llama32_3b_quiz(request: ChatRequest):
     generated_tokens = outputs[0][prompt_length:]  # Only the new tokens generated
 
     # Decode only the new part
-    new_text = tokenizer.decode(generated_tokens, skip_special_tokens=True).strip()
+    new_text = llama_tokenizer.decode(generated_tokens, skip_special_tokens=True).strip()
     new_text = new_text.strip('"')
 
     # print(f"Generated response: {new_text}")

@@ -34,9 +34,9 @@ def compare(request: CompareRequest):
     for hypothesis_id, hypothesis, prediction in zip(ids, hypotheses, predictions):
         prediction_dict = {name: round(float(pred) * 100, 1) for pred, name in zip(prediction, label_names)}
         entailment_score = prediction_dict["entailment"]
-        print(f"Premise: {request.premise}")
-        print(f"Hypothesis: {hypothesis}")
-        print(f"Prediction: {prediction_dict}\n")
+        # print(f"Premise: {request.premise}")
+        # print(f"Hypothesis: {hypothesis}")
+        # print(f"Prediction: {prediction_dict}\n")
 
         if entailment_score >= request.min_score:
             return hypothesis_id  # Return the ID of the matching hypothesis

@@ -67,10 +67,10 @@ def sentiment(request: SentimentRequest):
     return evaluate_sentiment(request)
 
 
-@app.post("/api/toxicity")
-def toxicity(request: SingleStringRequest):
-    result = get_toxicity(request.string)
-    return result  # Return the dictionary directly
+# @app.post("/api/toxicity")
+# def toxicity(request: SingleStringRequest):
+#     result = get_toxicity(request.string)
+#     return result  # Return the dictionary directly
 
 
 @app.post("/api/chat/ask")
