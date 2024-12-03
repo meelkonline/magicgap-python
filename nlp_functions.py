@@ -1,15 +1,9 @@
 import spacy
-import langid
 import pdfplumber
 from docx import Document
-from transformers import pipeline
-from api_requests import SentimentRequest
-from detoxify import Detoxify
 
 # Load the spaCy model
 nlp = spacy.load("en_core_web_sm")
-english_emotion_classifier = pipeline("sentiment-analysis", model="michellejieli/emotion_text_classifier", top_k=1)
-french_emotion_classifier = pipeline("text-classification", model="ac0hik/emotions_detection_french", top_k=1)
 
 
 def spatie_extract_phrases(text):
@@ -32,24 +26,15 @@ def spatie_extract_phrases(text):
     return ' '.join(nouns_verbs)
 
 
-def evaluate_sentiment(request: SentimentRequest):
-    if request.lang == 'fr':
-        result = french_emotion_classifier(request.strings)
-    else:
-        result = english_emotion_classifier(request.strings)
-
-    return result
+# def get_toxicity(text):
+#     raw_results = Detoxify('multilingual').predict(text)
+#     processed_results = {key: float(value) for key, value in raw_results.items()}
+#     return processed_results
 
 
-def get_toxicity(text):
-    raw_results = Detoxify('multilingual').predict(text)
-    processed_results = {key: float(value) for key, value in raw_results.items()}
-    return processed_results
-
-
-def get_lang(text):
-    lang, confidence = langid.classify(text)
-    return lang
+# def get_lang(text):
+#     lang, confidence = langid.classify(text)
+#     return lang
 
 
 def load_text(filepath):

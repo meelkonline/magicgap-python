@@ -71,8 +71,6 @@ def llama32_3b_ask(request: ChatRequest):
     input_ids = tokenizer_input.input_ids.cuda()
     attention_mask = tokenizer_input.attention_mask.cuda()
     print(f"messages: {request.messages}")
-    # tokenizer_input.add_special_tokens({'additional_special_tokens': ['<|system|>', '<|user|>', '<|assistant|>']})
-    # stopping_criteria = StoppingCriteriaList([MaxWordStoppingCriteria(max_words=100)])
 
     # Generate the assistant's response
     with torch.no_grad():
@@ -92,11 +90,12 @@ def llama32_3b_ask(request: ChatRequest):
     generated_tokens = outputs[:, prompt_length:]  # Slice for all batches
 
     # Decode only the new part
-    new_text = llama_tokenizer.batch_decode(generated_tokens, skip_special_tokens=True)
-    new_text = [text.strip('"') for text in new_text]  # Clean up quotes
-    print(f"new_text: {new_text}")
-    # Limit to 2 sentences
-    return limit_to_sentences(new_text[0], 3)
+    new_text = llama_tokenizer.decode(generated_tokens, skip_special_tokens=True).strip()
+    new_text = new_text.strip('"')
+
+    print(f"Generated response: {format_response(new_text)}")
+    # Format and return the response
+    return format_response(new_text)
 
 
 def llama32_3b_quiz(request: ChatRequest):
@@ -112,10 +111,10 @@ def llama32_3b_quiz(request: ChatRequest):
         outputs = llama_model.generate(
             input_ids=input_ids,
             attention_mask=attention_mask,
-            max_new_tokens=1024,  # Limit to shorter responses
+            max_new_tokens=120,  # Limit to shorter responses
             num_beams=3,
             temperature=0.6,
-            top_k=5,
+            top_k=1,
             stopping_criteria=StoppingCriteriaList([stopping_criteria]),
             eos_token_id=llama_tokenizer.eos_token_id,
             pad_token_id=llama_tokenizer.eos_token_id  # Prevents padding from being added
@@ -129,6 +128,20 @@ def llama32_3b_quiz(request: ChatRequest):
     new_text = llama_tokenizer.decode(generated_tokens, skip_special_tokens=True).strip()
     new_text = new_text.strip('"')
 
-    # print(f"Generated response: {new_text}")
-    return new_text
+    print(f"Generated response: {format_response(new_text)}")
+    # Format and return the response
+    return format_response(new_text)
 
+
+def format_response(generated_text: str) -> str:
+    """
+    Format the response by:
+    - Stopping at the <|assistant|> tag, if present.
+    - Limiting to a specific number of sentences.
+    """
+    # Stop at the <|assistant|> tag if it exists
+    if "<|assistant|>" in generated_text:
+        generated_text = generated_text.split("<|assistant|>")[0]
+
+    # Limit to 2 sentences
+    return limit_to_sentences(generated_text.strip(), 3)

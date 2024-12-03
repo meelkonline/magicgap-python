@@ -11,6 +11,7 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 embed_model_name = 'paraphrase-MiniLM-L6-v2'
 embed_model = SentenceTransformer(embed_model_name, device="cuda")
 
+
 def preprocess_text(text):
     # Normalize case and strip unnecessary spaces/punctuation
     text = text.lower().strip()
@@ -19,7 +20,6 @@ def preprocess_text(text):
 
 
 def evaluate_cosine_similarity(request: CosineSimilarityRequest):
-
     # Preprocess texts
     target_text = preprocess_text(request.target)
     messages_texts = [preprocess_text(msg) for msg in request.messages]
@@ -39,7 +39,6 @@ def evaluate_cosine_similarity(request: CosineSimilarityRequest):
 
 
 def embed(sentences):
-
     if isinstance(sentences, str):
         sentences = [sentences]
 

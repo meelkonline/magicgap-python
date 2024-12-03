@@ -5,11 +5,10 @@ from api_requests import UpsertRequest, SingleStringRequest, \
     TranslateRequest, ChatRequest, ChunkDocumentRequest, ChunkContentRequest, QueryRequest, SummarizeRequest, \
     CompareRequest
 from comparison import compare
-
 from faiss_functions import handle_faiss_upsert, handle_faiss_query
 from llama_functions import llama32_3b_ask, llama32_3b_quiz
-from nlp_functions import spatie_extract_phrases, get_lang, \
-    evaluate_sentiment, load_text, extract_sentences, get_toxicity
+from nlp_functions import spatie_extract_phrases, load_text, extract_sentences
+from sentiment_analysis import evaluate_sentiment
 from summarization import summarize_conversation
 from vector_functions import evaluate_cosine_similarity, embed, semantic_chunks
 import logging
@@ -44,9 +43,9 @@ def chunk_content(request: ChunkContentRequest):
     return semantic_chunks(sentences, request.threshold)
 
 
-@app.post("/api/lang")
-def lang(request: SingleStringRequest):
-    return get_lang(request.string)
+# @app.post("/api/lang")
+# def lang(request: SingleStringRequest):
+#     return get_lang(request.string)
 
 
 @app.post("/api/simple_cosine_similarity")
