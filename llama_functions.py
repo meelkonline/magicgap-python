@@ -96,7 +96,7 @@ def llama32_3b_ask(request: ChatRequest):
     new_text = [text.strip('"') for text in new_text]  # Clean up quotes
     print(f"new_text: {new_text}")
     # Limit to 2 sentences
-    return limit_to_sentences(new_text[0], 2)
+    return limit_to_sentences(new_text[0], 3)
 
 
 def llama32_3b_quiz(request: ChatRequest):
