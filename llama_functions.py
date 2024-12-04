@@ -65,83 +65,76 @@ class MaxWordStoppingCriteria(StoppingCriteria):
         return False
 
 
-def llama32_3b_ask(request: ChatRequest):
-    # Tokenize the prompt
-    tokenizer_input = llama_tokenizer(request.messages, return_tensors="pt")
-    input_ids = tokenizer_input.input_ids.cuda()
-    attention_mask = tokenizer_input.attention_mask.cuda()
-    print(f"messages: {request.messages}")
-
-    # Generate the assistant's response
-    with torch.no_grad():
-        outputs = llama_model.generate(
-            input_ids=input_ids,
-            attention_mask=attention_mask,
-            max_new_tokens=80,  # Approx. 50 words
-            num_beams=1,
-            temperature=0.1,
-            top_k=1,
-            eos_token_id=llama_tokenizer.eos_token_id,
-            pad_token_id=llama_tokenizer.eos_token_id  # Prevents padding from being added
-        )
-
-        # Extract only the generated part (new tokens)
-    prompt_length = input_ids.size(1)  # Handle batch size
-    generated_tokens = outputs[:, prompt_length:]  # Slice for all batches
-
-    # Decode only the new part
-    new_text = llama_tokenizer.decode(generated_tokens, skip_special_tokens=True).strip()
-    new_text = new_text.strip('"')
-
-    print(f"Generated response: {format_response(new_text)}")
-    # Format and return the response
-    return format_response(new_text)
-
-
-def llama32_3b_quiz(request: ChatRequest):
-    # Tokenize the prompt
-    tokenizer_input = llama_tokenizer(request.messages, return_tensors="pt")
-    input_ids = tokenizer_input.input_ids.cuda()
-    attention_mask = tokenizer_input.attention_mask.cuda()
-
-    stopping_criteria = StopAtFirstValidJSON(llama_tokenizer)
-
-    # Generate the assistant's response
-    with torch.no_grad():
-        outputs = llama_model.generate(
-            input_ids=input_ids,
-            attention_mask=attention_mask,
-            max_new_tokens=120,  # Limit to shorter responses
-            num_beams=3,
-            temperature=0.6,
-            top_k=1,
-            stopping_criteria=StoppingCriteriaList([stopping_criteria]),
-            eos_token_id=llama_tokenizer.eos_token_id,
-            pad_token_id=llama_tokenizer.eos_token_id  # Prevents padding from being added
-        )
-
-    # Extract only the generated part (new tokens)
-    prompt_length = input_ids.shape[1]  # Length of the original prompt
-    generated_tokens = outputs[0][prompt_length:]  # Only the new tokens generated
-
-    # Decode only the new part
-    new_text = llama_tokenizer.decode(generated_tokens, skip_special_tokens=True).strip()
-    new_text = new_text.strip('"')
-
-    print(f"Generated response: {format_response(new_text)}")
-    # Format and return the response
-    return format_response(new_text)
-
-
-def format_response(generated_text: str) -> str:
+def format_response(generated_text: str, max_sentences=3, max_words=None) -> str:
     """
     Format the response by:
     - Stopping at the <|assistant|> tag, if present.
     - Limiting to a specific number of sentences.
+    - Merging sentences not exceeding the max_words parameter.
     """
     # Stop at the <|assistant|> tag if it exists
     if "<|assistant|>" in generated_text:
         generated_text = generated_text.split("<|assistant|>")[0]
 
-    # Limit to 2 sentences
-    return limit_to_sentences(generated_text.strip(), 3)
+    if "<|user|>" in generated_text:
+        generated_text = generated_text.split("<|user|>")[0]
+
+    # Limit to the desired number of sentences
+    formatted_text = limit_to_sentences(generated_text.strip(), max_sentences)
+
+    # Optional: Merge sentences to not exceed max_words
+    if max_words is not None:
+        words = formatted_text.split()
+        if len(words) > max_words:
+            formatted_text = " ".join(words[:max_words])
+
+    return formatted_text
+
+
+def llama_generate_response(request: ChatRequest, max_new_tokens=100, num_beams=1, temperature=0.1) -> str:
+    """
+    Shared function to generate a response from the model with customizable parameters.
+    """
+    # Tokenize the prompt
+    tokenizer_input = llama_tokenizer(request.messages, return_tensors="pt")
+    input_ids = tokenizer_input.input_ids.cuda()
+    attention_mask = tokenizer_input.attention_mask.cuda()
+
+    # Generate the assistant's response
+    with torch.no_grad():
+        outputs = llama_model.generate(
+            input_ids=input_ids,
+            attention_mask=attention_mask,
+            max_new_tokens=max_new_tokens,
+            num_beams=num_beams,
+            temperature=temperature,
+            stopping_criteria=StoppingCriteriaList([MaxWordStoppingCriteria(max_words=50)]),  # Apply stopping criteria
+            top_k=1,
+            eos_token_id=llama_tokenizer.eos_token_id,
+            pad_token_id=llama_tokenizer.eos_token_id  # Prevents padding from being added
+        )
+
+    # Extract only the generated part (new tokens)
+    prompt_length = input_ids.size(1)  # Handle batch size
+    generated_tokens = outputs[:, prompt_length:]  # Slice for all batches
+
+    # Decode only the new part
+    new_text = llama_tokenizer.decode(generated_tokens[0].tolist(), skip_special_tokens=True).strip()
+    print(f"Generated raw response: {new_text}")
+
+    # Format and return the response
+    return format_response(new_text)
+
+
+def llama32_3b_ask(request: ChatRequest) -> str:
+    """
+    Function specific to the 'ask' scenario with predefined parameters.
+    """
+    return llama_generate_response(request, max_new_tokens=80, num_beams=1, temperature=0.1)
+
+
+def llama32_3b_quiz(request: ChatRequest) -> str:
+    """
+    Function specific to the 'quiz' scenario with predefined parameters.
+    """
+    return llama_generate_response(request, max_new_tokens=100, num_beams=3, temperature=0.1)
