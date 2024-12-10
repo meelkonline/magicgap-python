@@ -60,7 +60,7 @@ class MaxWordStoppingCriteria(StoppingCriteria):
         self.current_words = len(decoded_text.split())
         if self.current_words >= self.max_words:
             # Check if the last token is a punctuation mark indicating end of sentence
-            if decoded_text.strip()[-1] in {'.', '!', '?'}:
+            if decoded_text.strip()[-1] in {'.', '!', '?'} and not decoded_text.strip().endswith("..."):
                 return True
         return False
 
