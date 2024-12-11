@@ -99,7 +99,7 @@ def llama_generate_response(request: ChatRequest, max_new_tokens=100, num_beams=
     tokenizer_input = llama_tokenizer(request.messages, return_tensors="pt")
     input_ids = tokenizer_input.input_ids.cuda()
     attention_mask = tokenizer_input.attention_mask.cuda()
-
+    print(f"Prompt: {request.messages}")
     # Generate the assistant's response
     with torch.no_grad():
         outputs = llama_model.generate(
