@@ -45,13 +45,13 @@ def compare(request: CompareRequest):
     return "none"
 
 
-#Example : Define the single premise and multiple hypotheses
-#
-# premise = """Bruce and Roy, yes. They vanished around midnight, but they reappeared an hour later."""
+# #Example : Define the single premise and multiple hypotheses
+# #
+# premise = """The crate belongs to bruce, a sailor"""
 #
 # #premise = "Bruce and Roy, yes. They vanished around midnight, but they reappeared an hour later."
 # hypotheses = [
-#     [1, "Bruce and Roy disappeared at midnight on maguy's birthday."],
+#     [1, "The crate belongs to one of the sailors, Bruce"],
 #     [2, "Bruce and Roy disappeared at midnight during maguy's party, and reappeared an hour later."],
 #     [3, "Bruce mentioned that he joined the military during World War II."],
 #     [4, "Maupiti is a peaceful island without Italians."],

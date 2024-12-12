@@ -24,7 +24,7 @@ def summarize_conversation(sentences, max_length):
     with torch.no_grad():
         summary_ids = summarization_model.generate(
             inputs["input_ids"],
-            max_length=1024,
+            max_length=max_length,
             min_length=30,
             num_beams=2,
             length_penalty=2.0,
@@ -35,12 +35,12 @@ def summarize_conversation(sentences, max_length):
     return summary
 
 
-# sentences = ["when was maguy's birthday ?",
-#            "Maguy's birthday was last week, I think. We celebrated with champagne and cake on the boat.",
-#            "anything strange happened?",
-#            "I don't know what you're insinuating, Jerome. Maguy and I got along just fine.",
-#            "anybody disappeared ?",
-#            "Bruce and Roy, yes. They vanished around midnight, but they reappeared an hour later."]
+# sentences = ["What Can you deduce from the given clues ?",
+#            "The crate belongs to Roy?",
+#            "No nothing designates Roy...",
+#            "To Bruce?",
+#            "Yes that's correct!"
+#              ]
 #
-# s = summarize_conversation(sentences, 50)
+# s = summarize_conversation(sentences, 500)
 # print(s)
