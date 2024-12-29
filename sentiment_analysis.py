@@ -19,7 +19,10 @@ french_model = AutoModelForSequenceClassification.from_pretrained(FRENCH_MODEL_N
 def classify_emotion(texts, tokenizer, model):
     """
     Classifies emotions for a list of texts using the specified tokenizer and model.
-    Returns a list of dictionaries with label and score.
+    Returns a list of dictionaries with the *chosen* label and score for each text.
+
+    If the top-scoring label is 'neutral', it tries the next one, and so on.
+    If all labels end up being 'neutral', it stays with 'neutral'.
     """
     try:
         # Tokenize the input texts
@@ -30,13 +33,35 @@ def classify_emotion(texts, tokenizer, model):
             outputs = model(**inputs)
             probabilities = torch.nn.functional.softmax(outputs.logits, dim=-1)
 
-        # Extract the top label and score for each input
-        top_indices = torch.argmax(probabilities, dim=-1).cpu().tolist()
-        labels = [model.config.id2label[idx] for idx in top_indices]
-        scores = probabilities[range(len(probabilities)), top_indices].cpu().tolist()
+        results = []
+        for i in range(probabilities.size(0)):
+            # Convert tensor to list for this text
+            scores_i = probabilities[i].cpu().tolist()
 
-        # Convert to JSON-serializable structure
-        return [{"label": label, "score": score} for label, score in zip(labels, scores)]
+            # Build and sort label-score pairs in descending order by score
+            label_score_pairs = [
+                (model.config.id2label[j], scores_i[j]) for j in range(len(scores_i))
+            ]
+            label_score_pairs.sort(key=lambda x: x[1], reverse=True)
+
+            # Find the first label that isn't 'neutral'
+            chosen_label = None
+            chosen_score = None
+            for label, score in label_score_pairs:
+                print(label.lower())
+                if label.lower() != "neutral":
+                    chosen_label = label
+                    chosen_score = score
+
+                    break
+
+            # If none was found, use the top one (which will be 'neutral')
+            if chosen_label is None:
+                chosen_label, chosen_score = label_score_pairs[0]
+
+            results.append({"label": chosen_label, "score": chosen_score})
+
+        return results
 
     except Exception as e:
         # Handle and log any errors
@@ -56,6 +81,6 @@ def evaluate_sentiment(request: SentimentRequest):
         return {"error": str(e), "details": "An error occurred during sentiment analysis."}
 
 
-# r = SentimentRequest(lang="en", strings=["hello inspector, i am fine thank you"])
+# r = SentimentRequest(lang="fr", strings=["Bonjour Inspecteur, je vais bien je vous remercie"])
 # s = evaluate_sentiment(r)
 # print(s)

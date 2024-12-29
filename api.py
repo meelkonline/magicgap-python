@@ -1,9 +1,11 @@
 from fastapi import FastAPI
+from starlette.responses import StreamingResponse
 from transformers import pipeline
 from api_requests import UpsertRequest, SingleStringRequest, \
     CosineSimilarityRequest, SentimentRequest, \
     TranslateRequest, ChatRequest, ChunkDocumentRequest, ChunkContentRequest, QueryRequest, SummarizeRequest, \
-    CompareRequest
+    CompareRequest, AudioStreamRequest
+from audio_functions import text_to_audio_stream, text_to_audio_file
 from comparison import compare
 from faiss_functions import handle_faiss_upsert, handle_faiss_query
 from llama_functions import llama32_3b_ask, llama32_3b_quiz
@@ -115,3 +117,25 @@ def faiss_upsert(request: UpsertRequest):
 def faiss_query(request: QueryRequest):
     result = handle_faiss_query(request)
     return result
+
+
+@app.post("/api/audio/save")
+def save_audio(request: AudioStreamRequest):
+    base64 = text_to_audio_file(request.text, request.lang)
+    return base64
+
+
+@app.post("/api/audio/stream")
+async def stream_audio(request: AudioStreamRequest):
+    body = await request.json()
+    text = body.get("text", "")
+    lang = body.get("lang", "en")
+
+    if not text:
+        return {"error": "No text provided."}
+
+    # Create the generator
+    generator = text_to_audio_stream(text, lang)
+
+    # Return a streaming response with text/plain so it doesn't try to parse a big JSON array
+    return StreamingResponse(generator, media_type="text/plain")

@@ -45,6 +45,11 @@ class UpsertRequest(BaseModel):
     text: str
 
 
+class AudioStreamRequest(BaseModel):
+    text: str
+    lang: str
+
+
 class QueryRequest(BaseModel):
     text: str
     top_k: Optional[int] = 10
