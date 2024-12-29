@@ -35,11 +35,10 @@ def summarize_conversation(sentences, max_length):
     return summary
 
 
-# sentences = ["What Can you deduce from the given clues ?",
-#            "The crate belongs to Roy?",
-#            "No nothing designates Roy...",
-#            "To Bruce?",
-#            "Yes that's correct!"
+# sentences = ["Who is Bruce ?",
+#            "Bruce is a broken man, consumed by his vices. He prefers solitude, and honestly, he does nothing to make himself likable.",
+#            "Was he in the Italian Army?",
+#              "Yes"
 #              ]
 #
 # s = summarize_conversation(sentences, 500)
