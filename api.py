@@ -3,8 +3,8 @@ from starlette.responses import StreamingResponse
 from transformers import pipeline
 from api_requests import UpsertRequest, SingleStringRequest, \
     CosineSimilarityRequest, SentimentRequest, \
-    TranslateRequest, ChatRequest, ChunkDocumentRequest, ChunkContentRequest, QueryRequest, SummarizeRequest, \
-    CompareRequest, AudioStreamRequest
+    TranslateRequest, ChatRequest, ChunkSemanticDocumentRequest, ChunkContentRequest, QueryRequest, SummarizeRequest, \
+    CompareRequest, AudioStreamRequest, ChunkSimpleDocumentRequest
 from audio_functions import text_to_audio_stream, text_to_audio_file
 from comparison import compare
 from faiss_functions import handle_faiss_upsert, handle_faiss_query
@@ -12,6 +12,7 @@ from llama_functions import llama32_3b_ask, llama32_3b_quiz
 from nlp_functions import spatie_extract_phrases, load_text, extract_sentences
 from sentiment_analysis import evaluate_sentiment
 from summarization import summarize_conversation
+from pdf_chunker import SmartPdfChunker, SimplePdfChunker
 from vector_functions import evaluate_cosine_similarity, embed, semantic_chunks
 import logging
 
@@ -27,11 +28,25 @@ def extract_entities(text):
     return spatie_extract_phrases(text)
 
 
-@app.post("/api/chunk_document")
-def chunk_document(request: ChunkDocumentRequest):
+@app.post("/api/chunk_semantic_document")
+def chunk_semantic_document(request: ChunkSemanticDocumentRequest):
     text = load_text(request.filepath)
     sentences = extract_sentences(text)
     return semantic_chunks(sentences, request.threshold)
+
+
+@app.post("/api/chunk_simple_document")
+def chunk_simple_document(request: ChunkSimpleDocumentRequest):
+    chunker = SimplePdfChunker(request.filepath)
+    return chunker.chunk_document()
+
+
+@app.post("/api/smart_chunk")
+def smart_chunk(request: ChunkSemanticDocumentRequest):
+    chunker = SmartPdfChunker(pdf_path=request.filepath)
+    articles = chunker.chunk_document()
+
+    return articles
 
 
 @app.post("/api/summarize")

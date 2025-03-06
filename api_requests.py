@@ -76,9 +76,13 @@ class CompareRequest(BaseModel):
     min_score: int
 
 
-class ChunkDocumentRequest(BaseModel):
+class ChunkSemanticDocumentRequest(BaseModel):
     filepath: str
     threshold: float
+
+
+class ChunkSimpleDocumentRequest(BaseModel):
+    filepath: str
 
 
 class ChunkContentRequest(BaseModel):

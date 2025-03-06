@@ -1,3 +1,6 @@
+import re
+from typing import List
+
 import spacy
 import pdfplumber
 from docx import Document
@@ -74,8 +77,21 @@ def extract_text_from_docx(filepath):
     return ' '.join([paragraph.text for paragraph in doc.paragraphs])
 
 
-def extract_sentences(text):
-    """ Use spaCy to extract sentences from the provided text. """
+def extract_sentences(text, chunk_size=100000):
+    """ Extract sentences from large text in smaller chunks. """
+    if len(text) <= nlp.max_length:
+        return process_sentences_with_spacy(text)
+
+    sentences = []
+    for i in range(0, len(text), chunk_size):
+        chunk = text[i:i + chunk_size]
+        sentences.extend(process_sentences_with_spacy(chunk))  # Process each chunk separately
+
+    return sentences
+
+
+def process_sentences_with_spacy(text):
+    """ Process a single chunk of text to extract sentences. """
     doc = nlp(text)
     return [sent.text.strip() for sent in doc.sents]
 

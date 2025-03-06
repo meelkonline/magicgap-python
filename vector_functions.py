@@ -31,7 +31,7 @@ def evaluate_cosine_similarity(request: CosineSimilarityRequest):
 
     # Compute cosine similarity
     similarities = util.cos_sim(target_embedding, conversation_embeddings)
-    print(similarities)
+    # print(similarities)
     # Find the message with the highest similarity
     max_similarity, _ = torch.max(similarities, dim=1)
 

@@ -37,10 +37,10 @@ def compare(request: CompareRequest):
             for pred, name in zip(prediction, label_names)
         }
         entailment_score = prediction_dict["entailment"]
-        print(f"Premise: {request.premise}")
-        print(f"Hypothesis: {hypothesis}")
-        print(f"Prediction: {prediction_dict}\n")
-        print(f"Score: {entailment_score}")
+        # print(f"Premise: {request.premise}")
+        # print(f"Hypothesis: {hypothesis}")
+        # print(f"Prediction: {prediction_dict}\n")
+        # print(f"Score: {entailment_score}")
 
         # Check if this hypothesis meets the min_score requirement
         # AND if it's higher than the best found so far.

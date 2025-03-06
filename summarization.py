@@ -1,4 +1,5 @@
 import torch
+import spacy
 from transformers import AutoModelForSeq2SeqLM, AutoTokenizer
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -10,6 +11,9 @@ model_name = "philschmid/bart-large-cnn-samsum"
 # Load tokenizer and model directly
 tokenizer = AutoTokenizer.from_pretrained(model_name)
 summarization_model = AutoModelForSeq2SeqLM.from_pretrained(model_name).to(device)
+
+# Load spaCy's English model for sentence segmentation
+nlp = spacy.load("en_core_web_sm")
 
 
 def summarize_conversation(sentences, max_length):
@@ -32,8 +36,11 @@ def summarize_conversation(sentences, max_length):
             early_stopping=True
         )
     summary = tokenizer.decode(summary_ids[0], skip_special_tokens=True)
-    return summary
+    # Use spaCy to split the summary into sentences
+    doc = nlp(summary)
+    summary_sentences = [sent.text.strip() for sent in doc.sents]
 
+    return summary_sentences
 
 # sentences = ["Who is Bruce ?",
 #            "Bruce is a broken man, consumed by his vices. He prefers solitude, and honestly, he does nothing to make himself likable.",
