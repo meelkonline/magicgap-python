@@ -22,7 +22,7 @@ class SmartPdfChunker:
 
         self.client = openai.OpenAI(api_key=self.openai_api_key)
 
-    def extract_text_by_chunks(self, max_chars=2500) -> list:
+    def extract_text_by_chunks(self, max_chars=512) -> list:
         """Extract text from the PDF and split it into smaller chunks."""
         doc = fitz.open(self.pdf_path)
         full_text = []
