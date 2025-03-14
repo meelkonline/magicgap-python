@@ -90,16 +90,16 @@ def evaluate_sentiment(request: SentimentRequest):
         return [{"error": str(e), "details": "An error occurred during sentiment analysis."}]
 
 
-# Example Usage
-r = SentimentRequest(lang="fr", strings=["Bonjour Inspecteur, je vais bien je vous remercie"])
-s = evaluate_sentiment(r)
-print(s)
-
-r_en = SentimentRequest(lang="en", strings=["Hello Inspector, I am fine thank you"])
-s_en = evaluate_sentiment(r_en)
-print(s_en)
-
-r = SentimentRequest(lang="en", strings=['im looking for a rope', ' i dropped my ring at the bottom of the well',
-                                         ' juste offered to retrieve it for me', ' the rope is for him'])
-s = evaluate_sentiment(r)
-print(s)
+# # Example Usage
+# r = SentimentRequest(lang="fr", strings=["Bonjour Inspecteur, je vais bien je vous remercie"])
+# s = evaluate_sentiment(r)
+# print(s)
+#
+# r_en = SentimentRequest(lang="en", strings=["Hello Inspector, I am fine thank you"])
+# s_en = evaluate_sentiment(r_en)
+# print(s_en)
+#
+# r = SentimentRequest(lang="en", strings=['im looking for a rope', ' i dropped my ring at the bottom of the well',
+#                                          ' juste offered to retrieve it for me', ' the rope is for him'])
+# s = evaluate_sentiment(r)
+# print(s)
