@@ -5,7 +5,7 @@ from api_requests import UpsertRequest, SingleStringRequest, \
     CosineSimilarityRequest, SentimentRequest, \
     TranslateRequest, ChatRequest, ChunkSemanticDocumentRequest, ChunkContentRequest, QueryRequest, SummarizeRequest, \
     CompareRequest, AudioStreamRequest, ChunkSimpleDocumentRequest
-from audio_functions import text_to_audio_stream, text_to_audio_file
+from audio_functions import text_to_audio
 from comparison import compare
 from faiss_functions import handle_faiss_upsert, handle_faiss_query
 from llama_functions import llama32_3b_ask, llama32_3b_quiz
@@ -83,12 +83,6 @@ def sentiment(request: SentimentRequest):
     return evaluate_sentiment(request)
 
 
-# @app.post("/api/toxicity")
-# def toxicity(request: SingleStringRequest):
-#     result = get_toxicity(request.string)
-#     return result  # Return the dictionary directly
-
-
 @app.post("/api/chat/ask")
 def chat_ask(request: ChatRequest):
     result = llama32_3b_ask(request)
@@ -136,21 +130,17 @@ def faiss_query(request: QueryRequest):
 
 @app.post("/api/audio/save")
 def save_audio(request: AudioStreamRequest):
-    base64 = text_to_audio_file(request.text, request.lang)
-    return base64
+    return text_to_audio(request.text, request.lang, request.voice_id, False)
 
 
 @app.post("/api/audio/stream")
 async def stream_audio(request: AudioStreamRequest):
-    body = await request.json()
-    text = body.get("text", "")
-    lang = body.get("lang", "en")
+    text = request.text
+    lang = request.lang
+    voice_id = request.voice_id
 
     if not text:
         return {"error": "No text provided."}
 
-    # Create the generator
-    generator = text_to_audio_stream(text, lang)
-
     # Return a streaming response with text/plain so it doesn't try to parse a big JSON array
-    return StreamingResponse(generator, media_type="text/plain")
+    return StreamingResponse(text_to_audio(text, lang, voice_id, True), media_type="text/plain")

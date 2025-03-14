@@ -48,6 +48,7 @@ class UpsertRequest(BaseModel):
 class AudioStreamRequest(BaseModel):
     text: str
     lang: str
+    voice_id: str
 
 
 class QueryRequest(BaseModel):

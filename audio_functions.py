@@ -1,20 +1,25 @@
 import base64
 import json
+
+import librosa
 import torch
 from datasets import load_dataset
 from transformers import SpeechT5Processor, SpeechT5ForTextToSpeech, SpeechT5HifiGan
 import re
 import soundfile as sf
-
-from sentiment_analysis import classify_emotion
+from kokoro import KPipeline
+import numpy as np
+from api_requests import SentimentRequest
+from sentiment_analysis import classify_emotion, evaluate_sentiment
 
 # ---------------------------
 # Load TTS components once
 # ---------------------------
-audio_processor = SpeechT5Processor.from_pretrained("microsoft/speecht5_tts")
-audio_model = SpeechT5ForTextToSpeech.from_pretrained("microsoft/speecht5_tts")
-vocoder = SpeechT5HifiGan.from_pretrained("microsoft/speecht5_hifigan")
+# audio_processor = SpeechT5Processor.from_pretrained("microsoft/speecht5_tts")
+# audio_model = SpeechT5ForTextToSpeech.from_pretrained("microsoft/speecht5_tts")
+# vocoder = SpeechT5HifiGan.from_pretrained("microsoft/speecht5_hifigan")
 
+kokoro_pipeline = KPipeline(lang_code='a')
 embeddings_dataset = load_dataset("Matthijs/cmu-arctic-xvectors", split="validation")
 speaker_embeddings = torch.tensor(embeddings_dataset[7306]["xvector"]).unsqueeze(0)
 
@@ -37,50 +42,83 @@ def split_into_sentences(text: str):
     return sentences
 
 
-def synthesize_sentence(sentence: str):
+# OLD: SpeechT5 Inference
+# def synthesize_sentence(sentence: str):
+#     with torch.no_grad():
+#         inputs = audio_processor(text=sentence, return_tensors="pt")
+#         audio_tensor = audio_model.generate_speech(inputs["input_ids"], speaker_embeddings, vocoder=vocoder)
+#     return audio_tensor.numpy()  # float32 NumPy array
+
+
+def stream_output(data):
+    """Helper function to handle streaming JSON output."""
+    yield json.dumps(data) + "\n"
+
+
+def text_to_audio(text: str, lang: str = "en", voice_id: str = "", stream: bool = True):
     """
-    Run TTS on a single chunk/sentence and return raw float32 array.
+    Generate speech using Kokoro, either as a streaming response or as a full JSON array.
+
+    Parameters:
+    - `text` (str): The input text to synthesize.
+    - `lang` (str): The language for sentiment analysis.
+    - `stream` (bool): If True, yields a streaming JSON response; otherwise, returns a full JSON list.
+    - `split_pattern` (str): Defines how Kokoro splits text (default: `\n+`).
+
+    Returns:
+    - If `stream=True`: Generator yielding JSON per sentence (text, emotions, audio).
+    - If `stream=False`: A JSON list of sentences with text, emotions, and Base64 audio.
     """
-    with torch.no_grad():
-        inputs = audio_processor(text=sentence, return_tensors="pt")
-        audio_tensor = audio_model.generate_speech(inputs["input_ids"], speaker_embeddings, vocoder=vocoder)
-    return audio_tensor.numpy()  # float32 NumPy array
+    TARGET_SAMPLE_RATE = 22050  # Ensure time calculations are accurate
+    split_pattern = r"(?<=[.!?…])\s+"
+    generator = kokoro_pipeline(text, voice=voice_id, speed=1.0, split_pattern=split_pattern)
+    audio_chunks = []
+    response_list = []  # List to store JSON responses (for non-stream mode)
+    elapsed_time = 0.0  # Track cumulative time of sentences
 
+    for i, (gs, ps, audio) in enumerate(generator):
+        print(f"Chunk {i}: {gs}")  # ✅ Get exact text Kokoro generated
+        print(f"Phonemes: {ps}")
 
-def text_to_audio_stream(text: str, lang: str = "en"):
-    """
-    Generator yielding line-delimited JSON, each line containing:
-      - text (the chunk)
-      - emotions (label + score)
-      - audio_base64
-    """
-    # 1) Split text into sentences
-    sentences = split_into_sentences(text)
+        # 🔹 Emotion Detection
+        emotion_dict = evaluate_sentiment(SentimentRequest(lang=lang, strings=[gs]))
 
-    # 2) For each chunk: classify, synthesize, and yield
-    for sentence in sentences:
-        # (a) Emotion
-        emotion_dict = classify_emotion(sentence, lang)
+        # 🔹 Ensure audio is a NumPy array
+        if isinstance(audio, torch.Tensor):
+            audio = audio.detach().cpu().numpy()
 
-        # (b) TTS
-        audio_array = synthesize_sentence(sentence)
-        audio_bytes = audio_array.tobytes()
-        audio_base64 = base64.b64encode(audio_bytes).decode("utf-8")
+        # 🔹 Convert float32 → int16 PCM (16-bit for compatibility)
+        audio = (audio * 32767).astype(np.int16)
+        audio_chunks.append(audio)
 
-        # (c) Build JSON line
+        chunk_duration = len(audio) / TARGET_SAMPLE_RATE  # Time in seconds
+
+        # 🔹 Convert to Base64
+        audio_base64 = base64.b64encode(audio.tobytes()).decode("utf-8")
+
+        # 🔹 Build JSON response
         data_line = {
-            "text": sentence,
-            "emotions": emotion_dict,
-            "audio_base64": audio_base64,
+            "text": gs,  # ✅ Sentence text
+            "emotions": emotion_dict,  # ✅ Emotion classification
+            "audio_base64": audio_base64,  # ✅ Base64 encoded audio
+            "time": round(elapsed_time, 3)  # ✅ Start time relative to full audio
         }
-        yield json.dumps(data_line) + "\n"
 
+        elapsed_time += chunk_duration
 
-def text_to_audio_file(text: str, lang: str = "en"):
-    inputs = audio_processor(text=text, return_tensors="pt")
-    speech = audio_model.generate_speech(inputs["input_ids"], speaker_embeddings, vocoder=vocoder)
-    filename = "speech8.wav"
-    sf.write(filename, speech.numpy(), samplerate=16000)
-    audio_bytes = speech.numpy().tobytes()
-    audio_base64 = base64.b64encode(audio_bytes).decode("utf-8")
-    return {"audio_base64": audio_base64}
+        if stream:
+            stream_output(data_line)
+        else:
+            response_list.append(data_line)  # Store for full response
+
+    # If `stream=False`, return the full JSON array
+    if not stream:
+        full_audio = np.concatenate(audio_chunks, axis=0)
+
+        # 🔹 Convert to Base64
+        full_audio_base64 = base64.b64encode(full_audio.tobytes()).decode("utf-8")
+        # 🔹 Convert list to dictionary before adding `audio_base64`
+        response_data = {"audio_base64": full_audio_base64, "sentences": response_list}
+
+        return response_data
+
