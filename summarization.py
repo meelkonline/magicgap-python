@@ -42,11 +42,18 @@ def summarize_conversation(sentences, max_length):
 
     return summary_sentences
 
+#
 # sentences = ["Who is Bruce ?",
-#            "Bruce is a broken man, consumed by his vices. He prefers solitude, and honestly, he does nothing to make himself likable.",
-#            "Was he in the Italian Army?",
+#              "Bruce is a broken man, consumed by his vices. He prefers solitude, and honestly, he does nothing to make himself likable.",
+#              "Was he in the Italian Army?",
 #              "Yes"
 #              ]
 #
-# s = summarize_conversation(sentences, 500)
+# sentences2 = ["Qui est Bruce ?",
+#               "Bruce est un homme brisé, rongé par ses vices. Il préfère la solitude, et honnêtement, il ne fait rien pour se rendre aimable.",
+#               "Etait-il dans l'armée italienne?",
+#               "Oui, il y a quelques années"
+#               ]
+#
+# s = summarize_conversation(sentences2, 500)
 # print(s)

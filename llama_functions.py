@@ -132,9 +132,10 @@ def llama_generate_response(request: ChatRequest, max_new_tokens=100, num_beams=
 
 def llama32_3b_ask(request: ChatRequest) -> str:
     """Function specific to the 'ask' scenario with predefined parameters."""
-    return llama_generate_response(request, max_new_tokens=80, num_beams=1, temperature=0.1)
+    return llama_generate_response(request, max_new_tokens=1024, num_beams=5, temperature=0.1)
 
 
 def llama32_3b_quiz(request: ChatRequest) -> str:
     """Function specific to the 'quiz' scenario with predefined parameters."""
     return llama_generate_response(request, max_new_tokens=100, num_beams=3, temperature=0.1)
+
