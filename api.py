@@ -4,7 +4,7 @@ from transformers import pipeline
 from api_requests import UpsertRequest, SingleStringRequest, \
     CosineSimilarityRequest, SentimentRequest, \
     TranslateRequest, ChatRequest, ChunkSemanticDocumentRequest, ChunkContentRequest, QueryRequest, SummarizeRequest, \
-    CompareRequest, AudioStreamRequest, ChunkSimpleDocumentRequest
+    CompareRequest, AudioStreamRequest, ChunkSimpleDocumentRequest, MultipleStringRequest
 from audio_functions import kokoro_stream_audio, kokoro_save_audio
 from comparison import compare
 from faiss_functions import handle_faiss_upsert, handle_faiss_query
@@ -73,8 +73,8 @@ def simple_cosine_similarity(request: CosineSimilarityRequest):
 
 
 @app.post("/api/vectorize")
-def vectorize(request: SingleStringRequest):
-    embeddings = embed(request.string)
+def vectorize(request: MultipleStringRequest):
+    embeddings = embed(request.strings)
     embeddings_list = embeddings.tolist()
     return embeddings_list
 
