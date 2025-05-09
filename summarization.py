@@ -6,7 +6,8 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 # qa_model_name = "sshleifer/distilbart-cnn-12-6"
 # qa_model_name = "t5-small"
-model_name = "philschmid/bart-large-cnn-samsum"
+#model_name = "philschmid/bart-large-cnn-samsum"
+model_name = "philschmid/distilbart-cnn-12-6-samsum"
 
 # Load tokenizer and model directly
 tokenizer = AutoTokenizer.from_pretrained(model_name)
@@ -22,7 +23,7 @@ def summarize_conversation(sentences, max_length):
         conversation_text,
         return_tensors="pt",
         truncation=True,
-        max_length=1024  # Adjust based on the model's max input length
+        max_length=max_length  # Adjust based on the model's max input length
     ).to(device)
 
     with torch.no_grad():

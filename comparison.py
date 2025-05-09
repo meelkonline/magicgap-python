@@ -7,7 +7,8 @@ from api_requests import CompareRequest
 device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
 
 # Load model and tokenizer
-model_name = "MoritzLaurer/mDeBERTa-v3-base-xnli-multilingual-nli-2mil7"
+# model_name = "MoritzLaurer/mDeBERTa-v3-base-xnli-multilingual-nli-2mil7"
+model_name = "MoritzLaurer/multilingual-MiniLMv2-L6-mnli-xnli"
 tokenizer = AutoTokenizer.from_pretrained(model_name)
 model = AutoModelForSequenceClassification.from_pretrained(model_name).to(device)
 
