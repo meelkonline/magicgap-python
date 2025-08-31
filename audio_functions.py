@@ -4,7 +4,7 @@ import json
 import torch
 from datasets import load_dataset
 import re
-from kokoro import KPipeline
+#from kokoro import KPipeline
 import numpy as np
 from api_requests import SentimentRequest
 from sentiment_analysis import classify_emotion, evaluate_sentiment

@@ -1,5 +1,4 @@
 import json
-import openai
 import concurrent.futures
 import os
 import re
