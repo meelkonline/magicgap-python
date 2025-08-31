@@ -6,10 +6,78 @@ from sentence_transformers import SentenceTransformer, util
 from sklearn.metrics.pairwise import cosine_similarity
 from transformers import pipeline
 
+dtype = torch.float16  # try bfloat16 on newer GPUs if preferred
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-# Load a smaller and faster model
-embed_model_name = 'paraphrase-MiniLM-L6-v2'
-embed_model = SentenceTransformer(embed_model_name, device="cuda")
+
+# embed_model_name = 'paraphrase-MiniLM-L6-v2'
+# embed_model = SentenceTransformer(embed_model_name, device="cuda")
+
+# One-time init (do this at process start)
+DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
+MODEL_NAME = "sentence-transformers/all-MiniLM-L6-v2"
+
+embed_model = SentenceTransformer(MODEL_NAME)
+embed_model.to(DEVICE)
+embed_model.eval()  # keep it warm
+tokenizer = embed_model.tokenizer
+
+# Optional: raise model cap (does not change 384-d output)
+embed_model.max_seq_length = 512  # safe upper limit for MiniLM backbones
+
+
+def _token_count(text: str) -> int:
+    return len(tokenizer(text, add_special_tokens=False)["input_ids"])
+
+
+def _chunk_by_tokens(text: str, chunk_size=240, overlap=48):
+    ids = tokenizer(text, add_special_tokens=False)["input_ids"]
+    if len(ids) <= chunk_size:
+        return [text]
+    chunks = []
+    step = chunk_size - overlap
+    for s in range(0, len(ids), step):
+        piece_ids = ids[s:s + chunk_size]
+        chunks.append(tokenizer.decode(piece_ids, skip_special_tokens=True))
+    return chunks
+
+
+def smart_embed(texts, short_cap=200, chunk_size=240, overlap=48,
+                batch_size=256, normalize=False):
+    """
+    Returns a tensor of shape [N, 384] on DEVICE.
+    - If input is a string, returns shape [1, 384]
+    """
+    if isinstance(texts, str):
+        texts = [texts]
+
+    # Build per-text chunk lists
+    per_text_chunks = []
+    for t in texts:
+        if _token_count(t) <= short_cap:
+            per_text_chunks.append([t])
+        else:
+            per_text_chunks.append(_chunk_by_tokens(t, chunk_size, overlap))
+
+    # Flatten for one batched encode call
+    flat = [c for chunks in per_text_chunks for c in chunks]
+
+    with torch.inference_mode():
+        embs = embed_model.encode(
+            flat,
+            convert_to_tensor=True,
+            batch_size=batch_size,
+            show_progress_bar=False,
+            normalize_embeddings=normalize,
+        ).to(DEVICE)
+
+    # Re-group and mean-pool to one vector per original text
+    out = []
+    i = 0
+    for chunks in per_text_chunks:
+        n = len(chunks)
+        out.append(embs[i:i + n].mean(dim=0))
+        i += n
+    return torch.stack(out)  # [len(texts), 384] on DEVICE
 
 
 def preprocess_text(text):
@@ -45,27 +113,3 @@ def embed(sentences):
     with torch.no_grad():
         embeddings = embed_model.encode(sentences, convert_to_tensor=True, show_progress_bar=False, device="cuda")
     return embeddings
-
-
-def semantic_chunks(sentences, threshold):
-    """ Extract, embed and cluster sentences based on cosine similarity. """
-    embeddings = embed(sentences)
-    # Example of clustering based on cosine similarity threshold
-    clusters = []
-    for i in range(len(sentences)):
-        found_cluster = False
-        for cluster in clusters:
-            # if max(cosine_similarity([embeddings[i]], [embeddings[idx] for idx in cluster]))[0] > request.threshold:
-            if max(cosine_similarity(
-                    [embeddings[i].cpu().numpy()],
-                    [embeddings[idx].cpu().numpy() for idx in cluster]
-            ))[0] > threshold:
-                cluster.append(i)
-                found_cluster = True
-                break
-        if not found_cluster:
-            clusters.append([i])
-
-    # Extracting the clustered sentences
-    clustered_sentences = [[' '.join(sentences[idx] for idx in cluster)] for cluster in clusters]
-    return clustered_sentences

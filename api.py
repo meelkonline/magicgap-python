@@ -1,19 +1,19 @@
 from fastapi import FastAPI
 from starlette.responses import StreamingResponse
 from transformers import pipeline
-from api_requests import UpsertRequest, SingleStringRequest, \
+from api_requests import UpsertRequest, \
     CosineSimilarityRequest, SentimentRequest, \
-    TranslateRequest, ChatRequest, ChunkSemanticDocumentRequest, ChunkContentRequest, QueryRequest, SummarizeRequest, \
+    TranslateRequest, ChatRequest, ChunkContentRequest, QueryRequest, SummarizeRequest, \
     CompareRequest, AudioStreamRequest, ChunkSimpleDocumentRequest, MultipleStringRequest
 from audio_functions import kokoro_stream_audio, kokoro_save_audio
 from comparison import compare
 from faiss_functions import handle_faiss_upsert, handle_faiss_query
 from llama_functions import llama32_3b_ask, llama32_3b_quiz
-from nlp_functions import spatie_extract_phrases, load_text, extract_sentences
+from nlp_functions import spatie_extract_phrases, extract_sentences
 from sentiment_analysis import evaluate_sentiment
 from summarization import summarize_conversation
-from pdf_chunker import SmartPdfChunker, SimplePdfChunker
-from vector_functions import evaluate_cosine_similarity, embed, semantic_chunks
+from pdf_chunker import SimplePdfChunker
+from vector_functions import evaluate_cosine_similarity, embed, smart_embed
 import logging
 
 app = FastAPI()
@@ -28,42 +28,15 @@ def extract_entities(text):
     return spatie_extract_phrases(text)
 
 
-@app.post("/api/chunk_semantic_document")
-def chunk_semantic_document(request: ChunkSemanticDocumentRequest):
-    text = load_text(request.filepath)
-    sentences = extract_sentences(text)
-    return semantic_chunks(sentences, request.threshold)
-
-
 @app.post("/api/chunk_simple_document")
 def chunk_simple_document(request: ChunkSimpleDocumentRequest):
     chunker = SimplePdfChunker(request.filepath)
     return chunker.chunk_document()
 
 
-@app.post("/api/smart_chunk")
-def smart_chunk(request: ChunkSemanticDocumentRequest):
-    chunker = SmartPdfChunker(pdf_path=request.filepath)
-    articles = chunker.chunk_document()
-
-    return articles
-
-
 @app.post("/api/summarize")
 def summarize(request: SummarizeRequest):
-    #return llama32_summarize(request)
     return summarize_conversation(request.messages, request.max_length)
-
-
-@app.post("/api/chunk_content")
-def chunk_content(request: ChunkContentRequest):
-    sentences = extract_sentences(request.text)
-    return semantic_chunks(sentences, request.threshold)
-
-
-# @app.post("/api/lang")
-# def lang(request: SingleStringRequest):
-#     return get_lang(request.string)
 
 
 @app.post("/api/simple_cosine_similarity")
@@ -74,8 +47,11 @@ def simple_cosine_similarity(request: CosineSimilarityRequest):
 
 @app.post("/api/vectorize")
 def vectorize(request: MultipleStringRequest):
-    embeddings = embed(request.strings)
-    embeddings_list = embeddings.tolist()
+    # embeddings = embed(request.strings)
+    # embeddings_list = embeddings.tolist()
+
+    embeddings = smart_embed(request.strings)  # returns tensor [N,384] on GPU
+    embeddings_list = embeddings.cpu().tolist()  # move to CPU, convert to list
     return embeddings_list
 
 
