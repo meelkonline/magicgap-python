@@ -14,7 +14,8 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 # One-time init (do this at process start)
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
-MODEL_NAME = "sentence-transformers/all-MiniLM-L6-v2"
+MODEL_NAME = "paraphrase-MiniLM-L6-v2"
+#MODEL_NAME = "sentence-transformers/all-MiniLM-L6-v2"
 
 embed_model = SentenceTransformer(MODEL_NAME)
 embed_model.to(DEVICE)
