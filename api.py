@@ -4,12 +4,12 @@ from transformers import pipeline
 from api_requests import UpsertRequest, \
     CosineSimilarityRequest, SentimentRequest, \
     TranslateRequest, ChatRequest, ChunkContentRequest, QueryRequest, SummarizeRequest, \
-    CompareRequest, AudioStreamRequest, ChunkSimpleDocumentRequest, MultipleStringRequest
+    CompareRequest, AudioStreamRequest, ChunkSimpleDocumentRequest, MultipleStringRequest, ExtractSentencesRequest
 from audio_functions import kokoro_stream_audio, kokoro_save_audio
 from comparison import compare
 from faiss_functions import handle_faiss_upsert, handle_faiss_query
 from llama_functions import llama32_3b_ask, llama32_3b_quiz
-from nlp_functions import spatie_extract_phrases, extract_sentences
+from nlp_functions import spatie_extract_phrases
 from sentiment_analysis import evaluate_sentiment
 from summarization import summarize_conversation
 from pdf_chunker import SimplePdfChunker
@@ -23,9 +23,11 @@ logging.basicConfig(level=logging.INFO, filename='app.log', filemode='a', format
                                                                                  'message)s')
 
 
-@app.get("/api/extract_entities")
-def extract_entities(text):
-    return spatie_extract_phrases(text)
+@app.post("/api/extract_entities")
+def extract_entities(request: ExtractSentencesRequest):
+    messages = request.messages
+    lang = request.lang
+    return spatie_extract_phrases(messages, lang)
 
 
 @app.post("/api/chunk_simple_document")

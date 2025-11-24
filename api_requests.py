@@ -86,6 +86,11 @@ class ChunkSimpleDocumentRequest(BaseModel):
     filepath: str
 
 
+class ExtractSentencesRequest(BaseModel):
+    messages: list
+    lang: str
+
+
 class ChunkContentRequest(BaseModel):
     text: str
     threshold: float
