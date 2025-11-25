@@ -7,14 +7,16 @@ import spacy
 import tiktoken
 from dotenv import load_dotenv
 
+from nlp_functions import load_spacy_for_lang
+
 # Load .env variables
 load_dotenv()
 
 
 class SimplePdfChunker:
-    def __init__(self, pdf_path: str):
+    def __init__(self, pdf_path: str, lang:str):
         self.pdf_path = pdf_path
-        self.nlp = spacy.load("en_core_web_sm")  # NLP model for sentence splitting & entity extraction
+        self.nlp = load_spacy_for_lang(lang)  # NLP model for sentence splitting & entity extraction
         self.tokenizer = tiktoken.get_encoding("cl100k_base")  # GPT tokenizer
 
     def extract_text_by_paragraphs(self) -> list:

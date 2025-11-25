@@ -1,4 +1,7 @@
-from fastapi import FastAPI
+import os
+import uuid
+
+from fastapi import FastAPI, UploadFile, File, Form
 from starlette.responses import StreamingResponse
 from transformers import pipeline
 from api_requests import UpsertRequest, \
@@ -28,6 +31,35 @@ def extract_entities(request: ExtractSentencesRequest):
     messages = request.messages
     lang = request.lang
     return spatie_extract_phrases(messages, lang)
+
+
+@app.post("/api/chunk_simple_document_file")
+async def chunk_simple_document_file(file: UploadFile = File(...), lang: str = Form(...)):
+    TEMP_DIR = "tmp_chunker/"  # ensure this exists
+
+    # Generate a temporary path (safe, avoids collisions)
+    temp_filename = f"{uuid.uuid4()}_{file.filename}"
+    temp_path = os.path.join(TEMP_DIR, temp_filename)
+
+    # Save uploaded file to disk
+    with open(temp_path, "wb") as f:
+        while True:
+            chunk = await file.read(1024 * 1024)  # 1 MB chunks
+            if not chunk:
+                break
+            f.write(chunk)
+
+    # Reuse existing architecture
+    chunker = SimplePdfChunker(temp_path, lang=lang)
+    result = chunker.chunk_document()
+
+    # Optional: cleanup the file — up to you
+    try:
+        os.remove(temp_path)
+    except:
+        pass
+
+    return result
 
 
 @app.post("/api/chunk_simple_document")
